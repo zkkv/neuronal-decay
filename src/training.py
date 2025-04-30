@@ -36,10 +36,10 @@ def _():
     batch_size = 128
     rotations = [0, 160]
     learning_rate = 0.01
-    epochs_per_task = 3
-    test_size = 300
-    print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {epochs_per_task=}, {test_size=}")
-    return batch_size, epochs_per_task, learning_rate, rotations, test_size
+    n_batches_per_task = 100
+    test_size = 75
+    print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}")
+    return batch_size, learning_rate, n_batches_per_task, rotations, test_size
 
 
 @app.cell
@@ -198,15 +198,6 @@ class Experiment:
     def set_switch_indices(self, switch_indices):
         self.switch_indices = switch_indices
 
-    def get_performance_history(self):
-        return self.performance
-
-    def get_switch_indices(self):
-        return self.switch_indices
-
-    def get_experiment_number(self):
-        return self.experiment_no
-
     def __repr__(self):
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
         return f"{self.__class__.__name__}({attrs})"
@@ -241,20 +232,21 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
 
 
 @app.function
-def train_and_eval(model, joint_dataset, epoch, batch_size, test_set, test_size, performance, optimizer, loss_fn):
+def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size, performance, optimizer, loss_fn):
     '''
-    Function to train a [model] on a given [dataloader],
+    Function to train a [model] on a given [train_set],
     while evaluating after each training iteration on [test_set].
     '''
     model.train()
     iters_left = 1
-    print_every_n = 5
+    print_every_n = 25
 
-    print(f"Epoch {epoch}")
+    dataloader = CircularIterator(DataLoader(train_set, batch_size=batch_size, shuffle=True, drop_last=True))
 
-    dataloader = DataLoader(joint_dataset, batch_size=batch_size, shuffle=True)
+    for batch_idx in range(n_batches):
 
-    for batch_idx, (X, y) in enumerate(dataloader):        
+        (X, y) = next(dataloader)
+
         # Prediction
         pred = model(X)
 
@@ -273,21 +265,15 @@ def train_and_eval(model, joint_dataset, epoch, batch_size, test_set, test_size,
             print('Training loss: {loss:04f} | Test accuracy: {prec:05.2f}% | Batch: {b_index}'
                 .format(loss=loss.item(), prec=accuracy, b_index=batch_idx))
 
-    # Logging
-    print('Training loss: {loss:04f} | Test accuracy: {prec:05.2f}% | End of epoch {epoch}'
-        .format(loss=loss.item(), prec=accuracy, epoch=epoch)
-    )
-    print(batch_idx)
-
 
 @app.cell
 def _(
     batch_size,
     device,
-    epochs_per_task,
     img_n_channels,
     img_size,
     learning_rate,
+    n_batches_per_task,
     n_classes,
     rotations,
     test_datasets,
@@ -301,7 +287,7 @@ def _(
             "batch_size": batch_size,
             "rotations": rotations,
             "learning_rate": learning_rate,
-            "epochs_per_task": epochs_per_task,
+            "n_batches_per_task": n_batches_per_task,
             "test_size": test_size,
         }
 
@@ -321,10 +307,10 @@ def _(
 def _(
     batch_size,
     device,
-    epochs_per_task,
     img_n_channels,
     img_size,
     learning_rate,
+    n_batches_per_task,
     n_classes,
     rotations,
     test_datasets,
@@ -338,7 +324,7 @@ def _(
             "batch_size": batch_size,
             "rotations": rotations,
             "learning_rate": learning_rate,
-            "epochs_per_task": epochs_per_task,
+            "n_batches_per_task": n_batches_per_task,
             "test_size": test_size,
         }
 
@@ -355,9 +341,9 @@ def _(
 
 
 @app.cell
-def _(epochs_per_task, n_tasks, train_datasets):
+def _(n_tasks, train_datasets):
     def run_experiment(experiment):
-        print(f" Running experiment {experiment.get_experiment_number()} ".center(60, "~"))
+        print(f" Running experiment {experiment.experiment_no} ".center(60, "~"))
         performance_history = []
         switch_indices = []
 
@@ -369,24 +355,23 @@ def _(epochs_per_task, n_tasks, train_datasets):
             else:
                 dataset = train_datasets[task_idx - 1]
 
-            for epoch in range(epochs_per_task):
-                train_and_eval(
-                    experiment.model,
-                    dataset,
-                    epoch + 1,
-                    experiment.params["batch_size"] * task_idx,
-                    experiment.evaluation_set,
-                    experiment.params["test_size"],
-                    performance_history,
-                    experiment.optimizer,
-                    experiment.loss_fn,
-                )
+            train_and_eval(
+                experiment.model,
+                dataset,
+                experiment.params["n_batches_per_task"],
+                experiment.params["batch_size"] * task_idx,
+                experiment.evaluation_set,
+                experiment.params["test_size"],
+                performance_history,
+                experiment.optimizer,
+                experiment.loss_fn,
+            )
             switch_indices.append(len(performance_history))
 
         experiment.set_performance_history(performance_history)
         experiment.set_switch_indices(switch_indices)
 
-        print(f"Experiment {experiment.get_experiment_number()} done!")
+        print(f"Experiment {experiment.experiment_no} done!")
     return (run_experiment,)
 
 
@@ -401,13 +386,13 @@ def _(
 
     experiments = []
     experiments.append(experiment_1)
-    experiments.append(experiment_2)
+    # experiments.append(experiment_2)
 
     def run_all(experiments):
         for experiment in experiments:
             run_experiment(experiment)
     run_all(experiments)
-    return experiment_1, experiment_2, experiments
+    return (experiments,)
 
 
 @app.cell(hide_code=True)
@@ -422,9 +407,9 @@ def _(experiments, plot_lines):
 
     def plot_all(experiments):
         for experiment in experiments:
-            performances = [experiment.get_performance_history()]
+            performances = [experiment.performance]
             perf_lens = [len(l) for l in performances]
-            exp_n = experiment.get_experiment_number()
+            exp_n = experiment.experiment_no
 
             figure = plot_lines(
                 performances,
@@ -434,18 +419,11 @@ def _(experiments, plot_lines):
                 ylabel="Test Accuracy (%) on Task 1",
                 xlabel="Batch",
                 figsize=(10,5),
-                v_line=experiment.get_switch_indices()[:-1],
-                v_label='Task switch', ylim=(0,100),
+                v_line=experiment.switch_indices[:-1],
+                v_label='Task switch', ylim=(60, 100),
                 save_as=f"experiment_{exp_n}.png"
             )
     plot_all(experiments)
-    return
-
-
-@app.cell
-def _(experiment_1, experiment_2):
-    print((experiment_1.get_performance_history()))
-    print((experiment_2.get_performance_history()))
     return
 
 
@@ -570,6 +548,29 @@ def _(out_dir):
         # return the figure
         return f
     return (plot_lines,)
+
+
+@app.cell(hide_code=True)
+def _():
+    ## Utilities
+    return
+
+
+@app.class_definition
+class CircularIterator:
+    def __init__(self, iterable):
+        self.items = list(iterable)
+        if not self.items:
+            raise ValueError("Empty iterable")
+        self.index = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        value = self.items[self.index]
+        self.index = (self.index + 1) % len(self.items)
+        return value
 
 
 if __name__ == "__main__":

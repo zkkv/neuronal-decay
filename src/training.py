@@ -15,6 +15,7 @@ with app.setup:
     from torchvision.transforms import ToTensor
     from torch.utils.data import DataLoader, Subset, Dataset, ConcatDataset
     from torch import nn
+    import torch.nn.functional as F
 
 
 @app.cell(hide_code=True)
@@ -52,7 +53,7 @@ def _():
 
     print(f"[INFO] Using device: {device}")
     print(f"[INFO] Data directory: {data_dir}, Model directory: {model_dir}, Output directory: {out_dir}")
-    return data_dir, out_dir
+    return data_dir, device, out_dir
 
 
 @app.cell
@@ -276,11 +277,13 @@ def train_and_eval(model, joint_dataset, epoch, batch_size, test_set, test_size,
     print('Training loss: {loss:04f} | Test accuracy: {prec:05.2f}% | End of epoch {epoch}'
         .format(loss=loss.item(), prec=accuracy, epoch=epoch)
     )
+    print(batch_idx)
 
 
 @app.cell
 def _(
     batch_size,
+    device,
     epochs_per_task,
     img_n_channels,
     img_size,
@@ -292,6 +295,7 @@ def _(
 ):
     def build_experiment_1_with_replay_no_decay():
         model = Classifier(img_size, img_n_channels, n_classes)
+        model.to(device)
 
         params = {
             "batch_size": batch_size,
@@ -304,13 +308,50 @@ def _(
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = nn.functional.cross_entropy
+        loss_fn = F.cross_entropy
 
         use_perfect_replay = True
         use_neuronal_decay = False
 
         return Experiment(1, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay, use_neuronal_decay)
     return (build_experiment_1_with_replay_no_decay,)
+
+
+@app.cell
+def _(
+    batch_size,
+    device,
+    epochs_per_task,
+    img_n_channels,
+    img_size,
+    learning_rate,
+    n_classes,
+    rotations,
+    test_datasets,
+    test_size,
+):
+    def build_experiment_2_no_replay_no_decay():
+        model = Classifier(img_size, img_n_channels, n_classes)
+        model.to(device)
+
+        params = {
+            "batch_size": batch_size,
+            "rotations": rotations,
+            "learning_rate": learning_rate,
+            "epochs_per_task": epochs_per_task,
+            "test_size": test_size,
+        }
+
+        evaluation_set = test_datasets[0]
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
+        loss_fn = F.cross_entropy
+
+        use_perfect_replay = False
+        use_neuronal_decay = False
+
+        return Experiment(2, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay, use_neuronal_decay)
+    return (build_experiment_2_no_replay_no_decay,)
 
 
 @app.cell
@@ -342,8 +383,6 @@ def _(epochs_per_task, n_tasks, train_datasets):
                 )
             switch_indices.append(len(performance_history))
 
-        switch_indices.pop()
-
         experiment.set_performance_history(performance_history)
         experiment.set_switch_indices(switch_indices)
 
@@ -352,17 +391,23 @@ def _(epochs_per_task, n_tasks, train_datasets):
 
 
 @app.cell
-def _(build_experiment_1_with_replay_no_decay, run_experiment):
+def _(
+    build_experiment_1_with_replay_no_decay,
+    build_experiment_2_no_replay_no_decay,
+    run_experiment,
+):
     experiment_1 = build_experiment_1_with_replay_no_decay()
+    experiment_2 = build_experiment_2_no_replay_no_decay()
 
     experiments = []
     experiments.append(experiment_1)
+    experiments.append(experiment_2)
 
     def run_all(experiments):
         for experiment in experiments:
             run_experiment(experiment)
     run_all(experiments)
-    return (experiments,)
+    return experiment_1, experiment_2, experiments
 
 
 @app.cell(hide_code=True)
@@ -380,18 +425,27 @@ def _(experiments, plot_lines):
             performances = [experiment.get_performance_history()]
             perf_lens = [len(l) for l in performances]
             exp_n = experiment.get_experiment_number()
-    
+
             figure = plot_lines(
-                performances, x_axes=list(range(np.sum(perf_lens))),
+                performances,
+                x_axes=list(range(np.sum(perf_lens))),
                 line_names=['Performance'],
                 title=f"Performance on Task 1 throughout Experiment {exp_n}",
                 ylabel="Test Accuracy (%) on Task 1",
-                xlabel="Batch", figsize=(10,5),
-                v_line=experiment.get_switch_indices(),
-                v_label='Task switch', ylim=(60,100),
+                xlabel="Batch",
+                figsize=(10,5),
+                v_line=experiment.get_switch_indices()[:-1],
+                v_label='Task switch', ylim=(0,100),
                 save_as=f"experiment_{exp_n}.png"
             )
     plot_all(experiments)
+    return
+
+
+@app.cell
+def _(experiment_1, experiment_2):
+    print((experiment_1.get_performance_history()))
+    print((experiment_2.get_performance_history()))
     return
 
 

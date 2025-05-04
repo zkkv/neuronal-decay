@@ -33,11 +33,11 @@ def _():
 @app.cell
 def _():
     # Hyperparameters
-    batch_size = 128
-    rotations = [0, 160]
+    batch_size = 512
+    rotations = [0, 30, 160]
     learning_rate = 0.01
     n_batches_per_task = 100
-    test_size = 75
+    test_size = 512
     print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}")
     return batch_size, learning_rate, n_batches_per_task, rotations, test_size
 
@@ -102,8 +102,8 @@ def _(data_dir, rotations):
     test_data = datasets.MNIST(root=data_dir, train=False, download=True, transform=transforms.ToTensor())
 
     # TEMPORARILY REDUCE DATASET SIZE
-    training_data = Subset(training_data, range(1500))
-    test_data = Subset(test_data, range(1500))
+    # training_data = Subset(training_data, range(500))
+    # test_data = Subset(test_data, range(500))
 
     train_datasets = []
     test_datasets = []
@@ -152,18 +152,23 @@ class Classifier(nn.Module):
     def __init__(self, img_size, img_n_channels, n_classes):
         super().__init__()
         self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(img_n_channels * img_size * img_size, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, n_classes),
-        )
+        self.fc1 = nn.Linear(img_n_channels * img_size * img_size, 512)
+        self.fc2 = nn.Linear(512, 512)
+        self.fc3 = nn.Linear(512, n_classes)
+
+        self.activations = {}
 
 
     def forward(self, x):
         x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
+
+        a1 = F.relu(self.fc1(x))
+        self.activations[1] = a1
+
+        a2 = F.relu(self.fc2(a1))
+        self.activations[2] = a2
+
+        logits = self.fc3(a2)
         return logits
 
 
@@ -173,13 +178,19 @@ def _():
     return
 
 
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""### Setup""")
+    return
+
+
 @app.class_definition
 class Experiment:
     '''
     A single experiment involving a set of parameters and approaches.
     '''
 
-    def __init__(self, experiment_no, model, parameters, evaluation_set, optimizer, loss_fn, use_perfect_replay, use_neuronal_decay):
+    def __init__(self, experiment_no, model, parameters, evaluation_set, optimizer, loss_fn, use_perfect_replay):
         self.experiment_no = experiment_no
         self.model = model
         self.params = parameters
@@ -187,7 +198,6 @@ class Experiment:
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.use_perfect_replay = use_perfect_replay
-        self.use_neuronal_decay = use_neuronal_decay
 
         self.performance = []
         self.switch_indices = []
@@ -232,7 +242,7 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
 
 
 @app.function
-def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size, performance, optimizer, loss_fn):
+def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size, performance, optimizer, loss_fn, decay_lambda):
     '''
     Function to train a [model] on a given [train_set],
     while evaluating after each training iteration on [test_set].
@@ -241,7 +251,7 @@ def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size,
     iters_left = 1
     print_every_n = 25
 
-    dataloader = CircularIterator(DataLoader(train_set, batch_size=batch_size, shuffle=True, drop_last=True))
+    dataloader = CircularIterator(DataLoader(train_set, batch_size=batch_size, shuffle=True))
 
     for batch_idx in range(n_batches):
 
@@ -253,7 +263,7 @@ def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size,
         # Evaluation
         accuracy = compute_accuracy(model, test_set, test_size, batch_size)
         performance.append(accuracy)
-        loss = loss_fn(input=pred, target=y, reduction='mean')
+        loss = loss_fn(pred, y, activations=model.activations, decay_lambda=decay_lambda)
 
         # Backpropagation
         loss.backward()
@@ -264,6 +274,30 @@ def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size,
         if batch_idx % print_every_n == 0: 
             print('Training loss: {loss:04f} | Test accuracy: {prec:05.2f}% | Batch: {b_index}'
                 .format(loss=loss.item(), prec=accuracy, b_index=batch_idx))
+
+
+@app.function
+def loss_baseline(prediction, y, reduction='mean', activations=None, decay_lambda=0):
+    return F.cross_entropy(input=prediction, target=y, reduction=reduction)
+
+
+@app.function
+def neuronal_decay_l2(activations):
+    l2_decay = 0.0
+    for layer in activations:
+        l2_decay += torch.sum(activations[layer]**2)
+    return l2_decay
+
+
+@app.function
+def loss_with_l2(prediction, y, reduction='mean', activations=None, decay_lambda=0):
+    return loss_baseline(prediction, y, reduction) + decay_lambda * neuronal_decay_l2(activations)
+
+
+@app.cell(hide_code=True)
+def _():
+    mo.md(r"""### Execution""")
+    return
 
 
 @app.cell
@@ -289,17 +323,17 @@ def _(
             "learning_rate": learning_rate,
             "n_batches_per_task": n_batches_per_task,
             "test_size": test_size,
+            "decay_lambda": 0,
         }
 
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = F.cross_entropy
+        loss_fn = loss_baseline
 
         use_perfect_replay = True
-        use_neuronal_decay = False
 
-        return Experiment(1, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay, use_neuronal_decay)
+        return Experiment(1, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
     return (build_experiment_1_with_replay_no_decay,)
 
 
@@ -326,18 +360,55 @@ def _(
             "learning_rate": learning_rate,
             "n_batches_per_task": n_batches_per_task,
             "test_size": test_size,
+            "decay_lambda": 0,
         }
 
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = F.cross_entropy
+        loss_fn = loss_baseline
 
         use_perfect_replay = False
-        use_neuronal_decay = False
 
-        return Experiment(2, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay, use_neuronal_decay)
+        return Experiment(2, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
     return (build_experiment_2_no_replay_no_decay,)
+
+
+@app.cell
+def _(
+    batch_size,
+    device,
+    img_n_channels,
+    img_size,
+    learning_rate,
+    n_batches_per_task,
+    n_classes,
+    rotations,
+    test_datasets,
+    test_size,
+):
+    def build_experiment_3_with_replay_with_decay():
+        model = Classifier(img_size, img_n_channels, n_classes)
+        model.to(device)
+
+        params = {
+            "batch_size": batch_size,
+            "rotations": rotations,
+            "learning_rate": learning_rate,
+            "n_batches_per_task": n_batches_per_task,
+            "test_size": test_size,
+            "decay_lambda": 4e-3,
+        }
+
+        evaluation_set = test_datasets[0]
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
+        loss_fn = loss_with_l2
+
+        use_perfect_replay = True
+
+        return Experiment(3, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
+    return (build_experiment_3_with_replay_with_decay,)
 
 
 @app.cell
@@ -365,6 +436,7 @@ def _(n_tasks, train_datasets):
                 performance_history,
                 experiment.optimizer,
                 experiment.loss_fn,
+                experiment.params["decay_lambda"],
             )
             switch_indices.append(len(performance_history))
 
@@ -379,14 +451,17 @@ def _(n_tasks, train_datasets):
 def _(
     build_experiment_1_with_replay_no_decay,
     build_experiment_2_no_replay_no_decay,
+    build_experiment_3_with_replay_with_decay,
     run_experiment,
 ):
     experiment_1 = build_experiment_1_with_replay_no_decay()
     experiment_2 = build_experiment_2_no_replay_no_decay()
+    experiment_3 = build_experiment_3_with_replay_with_decay()
 
     experiments = []
     experiments.append(experiment_1)
-    # experiments.append(experiment_2)
+    experiments.append(experiment_2)
+    experiments.append(experiment_3)
 
     def run_all(experiments):
         for experiment in experiments:
@@ -405,15 +480,13 @@ def _():
 def _(experiments, plot_lines):
     plt.style.use('default')
 
-    def plot_all(experiments):
+    def plot_individually(experiments):
         for experiment in experiments:
             performances = [experiment.performance]
-            perf_lens = [len(l) for l in performances]
             exp_n = experiment.experiment_no
 
             figure = plot_lines(
                 performances,
-                x_axes=list(range(np.sum(perf_lens))),
                 line_names=['Performance'],
                 title=f"Performance on Task 1 throughout Experiment {exp_n}",
                 ylabel="Test Accuracy (%) on Task 1",
@@ -421,13 +494,31 @@ def _(experiments, plot_lines):
                 figsize=(10,5),
                 v_line=experiment.switch_indices[:-1],
                 v_label='Task switch', ylim=(60, 100),
-                save_as=f"experiment_{exp_n}.png"
+                save_as=f"plots/experiment_{exp_n}.svg"
             )
+
+
+    def plot_all(experiments):
+        performances = [e.performance for e in experiments]
+        exp_ns = [e.experiment_no for e in experiments]
+    
+        figure = plot_lines(
+            performances,
+            line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
+            title=f"Performance on Task 1 throughout Experiment(s): {exp_ns}",
+            ylabel="Test Accuracy (%) on Task 1",
+            xlabel="Batch",
+            figsize=(10,5),
+            v_line=experiments[0].switch_indices[:-1],
+            v_label='Task switch', ylim=(70, 100),
+            save_as=f"plots/experiment_{exp_ns}.svg"
+        )
+
     plot_all(experiments)
     return
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(out_dir):
     def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title=None,
                    title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
@@ -540,7 +631,7 @@ def _(out_dir):
             axarr.set_xscale('log')
         if save_as is not None:
             full_path="{}/{}".format(out_dir, save_as)
-            plt.savefig(full_path)
+            plt.savefig(full_path, bbox_inches='tight')
         if should_show:
             plt.show()
 
@@ -548,6 +639,45 @@ def _(out_dir):
         # return the figure
         return f
     return (plot_lines,)
+
+
+@app.cell(hide_code=True)
+def _():
+    ## Metrics
+    return
+
+
+@app.function
+def accuracy_at_task_switches(performance, switch_indices):
+    res = []
+    for i in switch_indices:
+        res.append(performance[i - 1])
+    return res
+
+
+@app.function
+def gap_depths(performance, switch_indices):
+    accs = accuracy_at_task_switches(performance, switch_indices)
+    accs.pop()
+    
+    res = []
+    for i, acc in enumerate(accs):
+        start, end = switch_indices[i], switch_indices[i + 1]
+        min_per_task = min(performance[start:end])
+        res.append(acc - min_per_task)
+    return res
+
+
+@app.cell
+def _(experiments):
+    print("Accuracy at task switches:")
+    for e in experiments:
+        print(accuracy_at_task_switches(e.performance, e.switch_indices))
+
+    print("\nGap depths:")
+    for e in experiments:
+        print(gap_depths(e.performance, e.switch_indices))
+    return
 
 
 @app.cell(hide_code=True)

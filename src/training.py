@@ -43,10 +43,19 @@ def _():
     batch_size = 512
     rotations = [0, 30, 160]
     learning_rate = 0.01
-    n_batches_per_task = 100
+    n_batches_per_task = 2 # FIXME
     test_size = 512
-    print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}")
-    return batch_size, learning_rate, n_batches_per_task, rotations, test_size
+    average_of = 1  # FIXME
+
+    print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}, {average_of=}")
+    return (
+        average_of,
+        batch_size,
+        learning_rate,
+        n_batches_per_task,
+        rotations,
+        test_size,
+    )
 
 
 @app.cell
@@ -108,6 +117,7 @@ def _(data_dir, rotations):
     training_data = datasets.MNIST(root=data_dir, train=True, download=True, transform=transforms.ToTensor())
     test_data = datasets.MNIST(root=data_dir, train=False, download=True, transform=transforms.ToTensor())
 
+    # FIXME
     # TEMPORARILY REDUCE DATASET SIZE
     training_data = Subset(training_data, range(500))
     test_data = Subset(test_data, range(500))
@@ -218,6 +228,18 @@ class Experiment:
     def __repr__(self):
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
         return f"{self.__class__.__name__}({attrs})"
+
+
+@app.class_definition
+class ExperimentResult:
+    '''
+    A structure wrapping experiment results.
+    '''
+
+    def __init__(self, experiment_no, performance, switch_indices):
+        self.experiment_no = experiment_no
+        self.performance = performance
+        self.switch_indices = switch_indices
 
 
 @app.function
@@ -420,8 +442,8 @@ def _(
 
 @app.cell
 def _(n_tasks, train_datasets):
-    def run_experiment(experiment):
-        print(f" Running experiment {experiment.experiment_no} ".center(60, "~"))
+    def run_experiment(experiment, run):
+        print(f" Running experiment {experiment.experiment_no} (run {run}) ".center(60, "~"))
         performance_history = []
         switch_indices = []
 
@@ -455,26 +477,39 @@ def _(n_tasks, train_datasets):
 
 
 @app.cell
+def _(average_of, run_experiment):
+    def run_experiments(experiment_builders):
+        results = []
+        for eb in experiment_builders:
+            runs = []
+            for r in range(1, average_of + 1):
+                e = eb()
+                run_experiment(e, r)
+                runs.append(e)
+
+            avg_performance = np.mean([r.performance for r in runs], axis=0)
+            res = ExperimentResult(runs[0].experiment_no, avg_performance, runs[0].switch_indices)
+            results.append(res)
+
+        return results
+    return (run_experiments,)
+
+
+@app.cell
 def _(
     build_experiment_1_with_replay_no_decay,
     build_experiment_2_no_replay_no_decay,
     build_experiment_3_with_replay_with_decay,
-    run_experiment,
+    run_experiments,
 ):
-    experiment_1 = build_experiment_1_with_replay_no_decay()
-    experiment_2 = build_experiment_2_no_replay_no_decay()
-    experiment_3 = build_experiment_3_with_replay_with_decay()
+    experiment_builders = [
+        build_experiment_1_with_replay_no_decay,
+        build_experiment_2_no_replay_no_decay,
+        build_experiment_3_with_replay_with_decay,
+    ]
 
-    experiments = []
-    experiments.append(experiment_1)
-    # experiments.append(experiment_2)
-    # experiments.append(experiment_3)
-
-    def run_all(experiments):
-        for experiment in experiments:
-            run_experiment(experiment)
-    run_all(experiments)
-    return (experiments,)
+    results = run_experiments(experiment_builders)
+    return (results,)
 
 
 @app.cell(hide_code=True)
@@ -484,13 +519,13 @@ def _():
 
 
 @app.cell
-def _(experiments, plot_lines):
+def _(plot_lines, results):
     plt.style.use('default')
 
-    def plot_individually(experiments):
-        for experiment in experiments:
-            performances = [experiment.performance]
-            exp_n = experiment.experiment_no
+    def plot_individually(results):
+        for result in results:
+            performances = [result.performance]
+            exp_n = result.experiment_no
 
             figure = plot_lines(
                 performances,
@@ -499,15 +534,15 @@ def _(experiments, plot_lines):
                 ylabel="Test Accuracy (%) on Task 1",
                 xlabel="Batch",
                 figsize=(10,5),
-                v_line=experiment.switch_indices[:-1],
+                v_line=result.switch_indices[:-1],
                 v_label='Task switch', ylim=(60, 100),
                 save_as=f"plots/experiment_{exp_n}.svg"
             )
 
 
-    def plot_all(experiments):
-        performances = [e.performance for e in experiments]
-        exp_ns = [e.experiment_no for e in experiments]
+    def plot_all(results):
+        performances = [e.performance for e in results]
+        exp_ns = [e.experiment_no for e in results]
 
         figure = plot_lines(
             performances,
@@ -516,12 +551,12 @@ def _(experiments, plot_lines):
             ylabel="Test Accuracy (%) on Task 1",
             xlabel="Batch",
             figsize=(10,5),
-            v_line=experiments[0].switch_indices[:-1],
+            v_line=results[0].switch_indices[:-1],
             v_label='Task switch', ylim=(70, 100),
             save_as=f"plots/experiment_{exp_ns}.svg"
         )
 
-    plot_all(experiments)
+    plot_all(results)
     return
 
 
@@ -676,13 +711,13 @@ def gap_depths(performance, switch_indices):
 
 
 @app.cell
-def _(experiments):
+def _(results):
     print("Accuracy at task switches:")
-    for e in experiments:
+    for e in results:
         print(accuracy_at_task_switches(e.performance, e.switch_indices))
 
     print("\nGap depths:")
-    for e in experiments:
+    for e in results:
         print(gap_depths(e.performance, e.switch_indices))
     return
 

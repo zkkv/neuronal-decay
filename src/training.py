@@ -43,9 +43,9 @@ def _():
     batch_size = 512
     rotations = [0, 30, 160]
     learning_rate = 0.01
-    n_batches_per_task = 2 # FIXME
+    n_batches_per_task = 100 # FIXME
     test_size = 512
-    average_of = 1  # FIXME
+    average_of = 5  # FIXME
 
     print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}, {average_of=}")
     return (
@@ -416,7 +416,44 @@ def _(
     test_datasets,
     test_size,
 ):
-    def build_experiment_3_with_replay_with_decay():
+    def build_experiment_3_no_replay_with_decay():
+        model = Classifier(img_size, img_n_channels, n_classes)
+        model.to(device)
+
+        params = {
+            "batch_size": batch_size,
+            "rotations": rotations,
+            "learning_rate": learning_rate,
+            "n_batches_per_task": n_batches_per_task,
+            "test_size": test_size,
+            "decay_lambda": 4e-3,
+        }
+
+        evaluation_set = test_datasets[0]
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
+        loss_fn = loss_with_l2
+
+        use_perfect_replay = False
+
+        return Experiment(3, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
+    return (build_experiment_3_no_replay_with_decay,)
+
+
+@app.cell
+def _(
+    batch_size,
+    device,
+    img_n_channels,
+    img_size,
+    learning_rate,
+    n_batches_per_task,
+    n_classes,
+    rotations,
+    test_datasets,
+    test_size,
+):
+    def build_experiment_4_with_replay_with_decay():
         model = Classifier(img_size, img_n_channels, n_classes)
         model.to(device)
 
@@ -436,8 +473,8 @@ def _(
 
         use_perfect_replay = True
 
-        return Experiment(3, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
-    return (build_experiment_3_with_replay_with_decay,)
+        return Experiment(4, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
+    return (build_experiment_4_with_replay_with_decay,)
 
 
 @app.cell
@@ -471,8 +508,6 @@ def _(n_tasks, train_datasets):
 
         experiment.set_performance_history(performance_history)
         experiment.set_switch_indices(switch_indices)
-
-        print(f"Experiment {experiment.experiment_no} done!")
     return (run_experiment,)
 
 
@@ -490,6 +525,7 @@ def _(average_of, run_experiment, save_result_to_csv):
             avg_performance = np.mean([r.performance for r in runs], axis=0)
             res = ExperimentResult(runs[0].experiment_no, avg_performance, runs[0].switch_indices)
             results.append(res)
+            print(f"Experiment {res.experiment_no} done!")
 
             if persist_results:
                 save_result_to_csv(res)
@@ -502,13 +538,15 @@ def _(average_of, run_experiment, save_result_to_csv):
 def _(
     build_experiment_1_with_replay_no_decay,
     build_experiment_2_no_replay_no_decay,
-    build_experiment_3_with_replay_with_decay,
+    build_experiment_3_no_replay_with_decay,
+    build_experiment_4_with_replay_with_decay,
     run_experiments,
 ):
     experiment_builders = [
         build_experiment_1_with_replay_no_decay,
         build_experiment_2_no_replay_no_decay,
-        build_experiment_3_with_replay_with_decay,
+        build_experiment_3_no_replay_with_decay,
+        build_experiment_4_with_replay_with_decay,
     ]
 
     results = run_experiments(experiment_builders)

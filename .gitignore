@@ -1,4 +1,5 @@
 poetry.lock
 src/__marimo__/
+src/__pycache__/
 data/
 out/

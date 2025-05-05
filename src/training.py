@@ -15,6 +15,8 @@ with app.setup:
     from torch.utils.data import DataLoader, Subset, Dataset, ConcatDataset
     from torch import nn
     import torch.nn.functional as F
+    import json
+    from utilities import TransformedDataset, CircularIterator
 
     DETERMINISTIC = True
     SEED = 42
@@ -43,9 +45,9 @@ def _():
     batch_size = 512
     rotations = [0, 30, 160]
     learning_rate = 0.01
-    n_batches_per_task = 100 # FIXME
+    n_batches_per_task = 3 # FIXME
     test_size = 512
-    average_of = 5  # FIXME
+    average_of = 1  # FIXME
 
     print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}, {average_of=}")
     return (
@@ -130,32 +132,6 @@ def _(data_dir, rotations):
 
     print(f"[INFO] Training set size = {len(training_data)}, Test set size = {len(test_data)}")
     return test_datasets, train_datasets, training_data
-
-
-@app.class_definition
-class TransformedDataset(Dataset):
-    '''
-    Represents a dataset with lazily-transformed value or target.
-    '''
-
-    def __init__(self, original_dataset, transform=None, target_transform=None):
-        super().__init__()
-        self.dataset = original_dataset
-        self.transform = transform
-        self.target_transform = target_transform
-
-
-    def __len__(self):
-        return len(self.dataset)
-
-
-    def __getitem__(self, index):
-        (value, target) = self.dataset[index]
-        if self.transform:
-            value = self.transform(value)
-        if self.target_transform:
-            target = self.target_transform(target)
-        return (value, target)
 
 
 @app.cell(hide_code=True)
@@ -512,7 +488,7 @@ def _(n_tasks, train_datasets):
 
 
 @app.cell
-def _(average_of, run_experiment, save_result_to_csv):
+def _(average_of, run_experiment, save_result_to_file):
     def run_experiments(experiment_builders, persist_results=True):
         results = []
         for eb in experiment_builders:
@@ -528,8 +504,9 @@ def _(average_of, run_experiment, save_result_to_csv):
             print(f"Experiment {res.experiment_no} done!")
 
             if persist_results:
-                save_result_to_csv(res)
+                save_result_to_file(res)
 
+        print("ALL EXPERIMENTS DONE!")
         return results
     return (run_experiments,)
 
@@ -550,251 +527,28 @@ def _(
     ]
 
     results = run_experiments(experiment_builders)
-    return (results,)
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""## Visualization""")
-    return
-
-
-@app.cell
-def _(plot_lines, results):
-    plt.style.use('default')
-
-    def plot_individually(results):
-        for result in results:
-            performances = [result.performance]
-            exp_n = result.experiment_no
-
-            figure = plot_lines(
-                performances,
-                line_names=['Performance'],
-                title=f"Performance on Task 1 throughout Experiment {exp_n}",
-                ylabel="Test Accuracy (%) on Task 1",
-                xlabel="Batch",
-                figsize=(10,5),
-                v_line=result.switch_indices[:-1],
-                v_label='Task switch', ylim=(60, 100),
-                save_as=f"plots/experiment_{exp_n}.svg"
-            )
-
-
-    def plot_all(results):
-        performances = [e.performance for e in results]
-        exp_ns = [e.experiment_no for e in results]
-
-        figure = plot_lines(
-            performances,
-            line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
-            title=f"Performance on Task 1 throughout Experiment(s): {exp_ns}",
-            ylabel="Test Accuracy (%) on Task 1",
-            xlabel="Batch",
-            figsize=(10,5),
-            v_line=results[0].switch_indices[:-1],
-            v_label='Task switch', ylim=(70, 100),
-            save_as=f"plots/experiment_{exp_ns}.svg"
-        )
-
-    plot_all(results)
-    return
-
-
-@app.cell(hide_code=True)
-def _(out_dir):
-    def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title=None,
-                   title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
-                   x_log=False, with_dots=False, linestyle='solid', h_line=None, h_label=None, h_error=None,
-                   h_lines=None, h_colors=None, h_labels=None, h_errors=None,
-                   v_line=None, v_label=None, save_as=None, should_show=True):
-        '''Generates a figure containing multiple lines in one plot.
-
-        :param list_with_lines: <list> of all lines to plot (with each line being a <list> as well)
-        :param x_axes:          <list> containing the values for the x-axis
-        :param line_names:      <list> containing the names of each line
-        :param colors:          <list> containing the colors of each line
-        :param title:           <str> title of plot
-        :param title_top:       <str> text to appear on top of the title
-        :return: f:             <figure>
-        '''
-
-        # if needed, generate default x-axis
-        if x_axes == None:
-            n_obs = len(list_with_lines[0])
-            x_axes = list(range(n_obs))
-
-        # if needed, generate default line-names
-        if line_names == None:
-            n_lines = len(list_with_lines)
-            line_names = ["line " + str(line_id) for line_id in range(n_lines)]
-
-        # make plot
-        size = (12,7) if figsize is None else figsize
-        f, axarr = plt.subplots(1, 1, figsize=size)
-
-        # add error-lines / shaded areas
-        if list_with_errors is not None:
-            for line_id, name in enumerate(line_names):
-                if errors=="shaded":
-                    axarr.fill_between(x_axes, list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])),
-                                       list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])),
-                                       color=None if (colors is None) else colors[line_id], alpha=0.25)
-                else:
-                    axarr.plot(x_axes, list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])), label=None,
-                               color=None if (colors is None) else colors[line_id], linewidth=1, linestyle='dashed')
-                    axarr.plot(x_axes, list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])), label=None,
-                               color=None if (colors is None) else colors[line_id], linewidth=1, linestyle='dashed')
-
-        # mean lines
-        for line_id, name in enumerate(line_names):
-            axarr.plot(x_axes, list_with_lines[line_id], label=name,
-                       color=None if (colors is None) else colors[line_id],
-                       linewidth=4, marker='o' if with_dots else None, linestyle=linestyle if type(linestyle)==str else linestyle[line_id])
-
-        # add horizontal line
-        if h_line is not None:
-            axarr.axhline(y=h_line, label=h_label, color="grey")
-            if h_error is not None:
-                if errors == "shaded":
-                    axarr.fill_between([x_axes[0], x_axes[-1]],
-                                       [h_line + h_error, h_line + h_error], [h_line - h_error, h_line - h_error],
-                                       color="grey", alpha=0.25)
-                else:
-                    axarr.axhline(y=h_line + h_error, label=None, color="grey", linewidth=1, linestyle='dashed')
-                    axarr.axhline(y=h_line - h_error, label=None, color="grey", linewidth=1, linestyle='dashed')
-
-        # add horizontal lines
-        if h_lines is not None:
-            h_colors = colors if h_colors is None else h_colors
-            for line_id, new_h_line in enumerate(h_lines):
-                axarr.axhline(y=new_h_line, label=None if h_labels is None else h_labels[line_id],
-                              color=None if (h_colors is None) else h_colors[line_id])
-                if h_errors is not None:
-                    if errors == "shaded":
-                        axarr.fill_between([x_axes[0], x_axes[-1]],
-                                           [new_h_line + h_errors[line_id], new_h_line+h_errors[line_id]],
-                                           [new_h_line - h_errors[line_id], new_h_line - h_errors[line_id]],
-                                           color=None if (h_colors is None) else h_colors[line_id], alpha=0.25)
-                    else:
-                        axarr.axhline(y=new_h_line+h_errors[line_id], label=None,
-                                      color=None if (h_colors is None) else h_colors[line_id], linewidth=1,
-                                      linestyle='dashed')
-                        axarr.axhline(y=new_h_line-h_errors[line_id], label=None,
-                                      color=None if (h_colors is None) else h_colors[line_id], linewidth=1,
-                                      linestyle='dashed')
-
-        # add vertical line(s)
-        if v_line is not None:
-            if type(v_line)==list:
-                for id,new_line in enumerate(v_line):
-                    axarr.axvline(x=new_line, label=v_label if id==0 else None, color='black')
-            else:
-                axarr.axvline(x=v_line, label=v_label, color='black')
-
-        # finish layout
-        # -set y-axis
-        if ylim is not None:
-            axarr.set_ylim(ylim)
-        # -add axis-labels
-        if xlabel is not None:
-            axarr.set_xlabel(xlabel)
-        if ylabel is not None:
-            axarr.set_ylabel(ylabel)
-        # -add title(s)
-        if title is not None:
-            axarr.set_title(title)
-        if title_top is not None:
-            f.suptitle(title_top)
-        # -add legend
-        if line_names is not None:
-            axarr.legend()
-        # -set x-axis to log-scale
-        if x_log:
-            axarr.set_xscale('log')
-        if save_as is not None:
-            full_path="{}/{}".format(out_dir, save_as)
-            plt.savefig(full_path, bbox_inches='tight')
-        if should_show:
-            plt.show()
-
-
-        # return the figure
-        return f
-    return (plot_lines,)
-
-
-@app.cell(hide_code=True)
-def _():
-    ## Metrics
-    return
-
-
-@app.function
-def accuracy_at_task_switches(performance, switch_indices):
-    res = []
-    for i in switch_indices:
-        res.append(performance[i - 1])
-    return res
-
-
-@app.function
-def gap_depths(performance, switch_indices):
-    accs = accuracy_at_task_switches(performance, switch_indices)
-    accs.pop()
-
-    res = []
-    for i, acc in enumerate(accs):
-        start, end = switch_indices[i], switch_indices[i + 1]
-        min_per_task = min(performance[start:end])
-        res.append(acc - min_per_task)
-    return res
-
-
-@app.cell
-def _(results):
-    print("Accuracy at task switches:")
-    for e in results:
-        print(accuracy_at_task_switches(e.performance, e.switch_indices))
-
-    print("\nGap depths:")
-    for e in results:
-        print(gap_depths(e.performance, e.switch_indices))
     return
 
 
 @app.cell(hide_code=True)
 def _():
-    ## Utilities
+    mo.md(r"""## Utilities""")
     return
-
-
-@app.class_definition
-class CircularIterator:
-    def __init__(self, iterable):
-        self.items = list(iterable)
-        if not self.items:
-            raise ValueError("Empty iterable")
-        self.index = 0
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        value = self.items[self.index]
-        self.index = (self.index + 1) % len(self.items)
-        return value
 
 
 @app.cell
 def _(out_dir):
-    def save_result_to_csv(result):
-        name = f"perf_{result.experiment_no}.csv"
-        np.savetxt(f"{out_dir}/csv/{name}", result.performance, delimiter=",", fmt='%s')
+    def save_result_to_file(result):
+        name = f"result_{result.experiment_no}.json"
+        mapped = {
+            "experiment_no": result.experiment_no,
+            "performance": result.performance.tolist(),
+            "switch_indices": result.switch_indices,
+        }
     
-        name = f"switch_indices_{result.experiment_no}.csv"
-        np.savetxt(f"{out_dir}/csv/{name}", result.switch_indices, delimiter=",", fmt='%s')
-    return (save_result_to_csv,)
+        with open(f"{out_dir}/results/{name}", 'w') as f:
+            json.dump(mapped, f, indent=2)
+    return (save_result_to_file,)
 
 
 if __name__ == "__main__":

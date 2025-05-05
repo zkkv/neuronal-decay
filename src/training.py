@@ -9,13 +9,20 @@ with app.setup:
     import marimo as mo
     import matplotlib.pyplot as plt
     import numpy as np
-    import random
     import torch
     from torchvision import datasets, transforms
     from torchvision.transforms import ToTensor
     from torch.utils.data import DataLoader, Subset, Dataset, ConcatDataset
     from torch import nn
     import torch.nn.functional as F
+
+    DETERMINISTIC = True
+    SEED = 42
+
+    if DETERMINISTIC:
+        np.random.seed(SEED)
+        torch.manual_seed(SEED)
+        torch.use_deterministic_algorithms(True)
 
 
 @app.cell(hide_code=True)
@@ -102,8 +109,8 @@ def _(data_dir, rotations):
     test_data = datasets.MNIST(root=data_dir, train=False, download=True, transform=transforms.ToTensor())
 
     # TEMPORARILY REDUCE DATASET SIZE
-    # training_data = Subset(training_data, range(500))
-    # test_data = Subset(test_data, range(500))
+    training_data = Subset(training_data, range(500))
+    test_data = Subset(test_data, range(500))
 
     train_datasets = []
     test_datasets = []
@@ -460,8 +467,8 @@ def _(
 
     experiments = []
     experiments.append(experiment_1)
-    experiments.append(experiment_2)
-    experiments.append(experiment_3)
+    # experiments.append(experiment_2)
+    # experiments.append(experiment_3)
 
     def run_all(experiments):
         for experiment in experiments:
@@ -501,7 +508,7 @@ def _(experiments, plot_lines):
     def plot_all(experiments):
         performances = [e.performance for e in experiments]
         exp_ns = [e.experiment_no for e in experiments]
-    
+
         figure = plot_lines(
             performances,
             line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
@@ -659,7 +666,7 @@ def accuracy_at_task_switches(performance, switch_indices):
 def gap_depths(performance, switch_indices):
     accs = accuracy_at_task_switches(performance, switch_indices)
     accs.pop()
-    
+
     res = []
     for i, acc in enumerate(accs):
         start, end = switch_indices[i], switch_indices[i + 1]

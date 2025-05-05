@@ -477,8 +477,8 @@ def _(n_tasks, train_datasets):
 
 
 @app.cell
-def _(average_of, run_experiment):
-    def run_experiments(experiment_builders):
+def _(average_of, run_experiment, save_result_to_csv):
+    def run_experiments(experiment_builders, persist_results=True):
         results = []
         for eb in experiment_builders:
             runs = []
@@ -490,6 +490,9 @@ def _(average_of, run_experiment):
             avg_performance = np.mean([r.performance for r in runs], axis=0)
             res = ExperimentResult(runs[0].experiment_no, avg_performance, runs[0].switch_indices)
             results.append(res)
+
+            if persist_results:
+                save_result_to_csv(res)
 
         return results
     return (run_experiments,)
@@ -743,6 +746,17 @@ class CircularIterator:
         value = self.items[self.index]
         self.index = (self.index + 1) % len(self.items)
         return value
+
+
+@app.cell
+def _(out_dir):
+    def save_result_to_csv(result):
+        name = f"perf_{result.experiment_no}.csv"
+        np.savetxt(f"{out_dir}/csv/{name}", result.performance, delimiter=",", fmt='%s')
+    
+        name = f"switch_indices_{result.experiment_no}.csv"
+        np.savetxt(f"{out_dir}/csv/{name}", result.switch_indices, delimiter=",", fmt='%s')
+    return (save_result_to_csv,)
 
 
 if __name__ == "__main__":

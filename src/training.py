@@ -45,7 +45,7 @@ def _():
     batch_size = 512
     rotations = [0, 30, 160]
     learning_rate = 0.01
-    n_batches_per_task = 3 # FIXME
+    n_batches_per_task = 1 # FIXME
     test_size = 512
     average_of = 1  # FIXME
 
@@ -454,9 +454,9 @@ def _(
 
 
 @app.cell
-def _(n_tasks, train_datasets):
+def _(average_of, n_tasks, train_datasets):
     def run_experiment(experiment, run):
-        print(f" Running experiment {experiment.experiment_no} (run {run}) ".center(60, "~"))
+        print(f" Running experiment {experiment.experiment_no} (run {run}/{average_of}) ".center(60, "~"))
         performance_history = []
         switch_indices = []
 

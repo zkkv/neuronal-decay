@@ -18,7 +18,7 @@ with app.setup:
     import json
     from utilities import TransformedDataset, CircularIterator
 
-    DETERMINISTIC = True
+    DETERMINISTIC = False  # FIXME
     SEED = 42
 
     if DETERMINISTIC:
@@ -45,14 +45,16 @@ def _():
     batch_size = 512
     rotations = [0, 30, 160]
     learning_rate = 0.01
-    n_batches_per_task = 1 # FIXME
+    n_batches_per_task = 50 # FIXME
     test_size = 512
-    average_of = 1  # FIXME
+    average_of = 2  # FIXME
+    decay_lambda = 1e-7
 
     print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}, {average_of=}")
     return (
         average_of,
         batch_size,
+        decay_lambda,
         learning_rate,
         n_batches_per_task,
         rotations,
@@ -121,8 +123,12 @@ def _(data_dir, rotations):
 
     # FIXME
     # TEMPORARILY REDUCE DATASET SIZE
-    training_data = Subset(training_data, range(500))
-    test_data = Subset(test_data, range(500))
+    # training_data = Subset(training_data, range(500))
+    # test_data = Subset(test_data, range(500))
+    training_data = Subset(training_data, range(2000))
+    test_data = Subset(test_data, range(2000))
+    # training_data = Subset(training_data, range(5000))
+    # test_data = Subset(test_data, range(5000))
 
     train_datasets = []
     test_datasets = []
@@ -145,24 +151,24 @@ class Classifier(nn.Module):
     def __init__(self, img_size, img_n_channels, n_classes):
         super().__init__()
         self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(img_n_channels * img_size * img_size, 512)
-        self.fc2 = nn.Linear(512, 512)
-        self.fc3 = nn.Linear(512, n_classes)
-
-        self.activations = {}
+        self.fc1 = nn.Linear(img_n_channels * img_size * img_size, 2048)
+        self.fc2 = nn.Linear(2048, 2048)
+        self.fc3 = nn.Linear(2048, n_classes)
 
 
     def forward(self, x):
         x = self.flatten(x)
+        l2_decay = 0
 
         a1 = F.relu(self.fc1(x))
-        self.activations[1] = a1
+        l2_decay += torch.sum(a1**2)
 
         a2 = F.relu(self.fc2(a1))
-        self.activations[2] = a2
+        l2_decay += torch.sum(a2**2)
 
         logits = self.fc3(a2)
-        return logits
+        
+        return logits, l2_decay
 
 
 @app.cell(hide_code=True)
@@ -235,7 +241,7 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
         if test_size and total_tested >= test_size:
             break
         with torch.no_grad():
-            scores = model(X)
+            scores, _ = model(X)
         _, pred = torch.max(scores, 1)
         total_correct += (pred == y).sum().item()
         total_tested += len(X)
@@ -263,12 +269,12 @@ def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size,
         (X, y) = next(dataloader)
 
         # Prediction
-        pred = model(X)
+        pred, decay = model(X)
 
         # Evaluation
         accuracy = compute_accuracy(model, test_set, test_size, batch_size)
         performance.append(accuracy)
-        loss = loss_fn(pred, y, activations=model.activations, decay_lambda=decay_lambda)
+        loss = loss_fn(pred, y) + decay_lambda * decay
 
         # Backpropagation
         loss.backward()
@@ -282,21 +288,8 @@ def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size,
 
 
 @app.function
-def loss_baseline(prediction, y, reduction='mean', activations=None, decay_lambda=0):
+def loss(prediction, y, reduction='mean'):
     return F.cross_entropy(input=prediction, target=y, reduction=reduction)
-
-
-@app.function
-def neuronal_decay_l2(activations):
-    l2_decay = 0.0
-    for layer in activations:
-        l2_decay += torch.sum(activations[layer]**2)
-    return l2_decay
-
-
-@app.function
-def loss_with_l2(prediction, y, reduction='mean', activations=None, decay_lambda=0):
-    return loss_baseline(prediction, y, reduction) + decay_lambda * neuronal_decay_l2(activations)
 
 
 @app.cell(hide_code=True)
@@ -334,7 +327,7 @@ def _(
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss_baseline
+        loss_fn = loss
 
         use_perfect_replay = True
 
@@ -371,7 +364,7 @@ def _(
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss_baseline
+        loss_fn = loss
 
         use_perfect_replay = False
 
@@ -382,6 +375,7 @@ def _(
 @app.cell
 def _(
     batch_size,
+    decay_lambda,
     device,
     img_n_channels,
     img_size,
@@ -402,13 +396,13 @@ def _(
             "learning_rate": learning_rate,
             "n_batches_per_task": n_batches_per_task,
             "test_size": test_size,
-            "decay_lambda": 4e-3,
+            "decay_lambda": decay_lambda,
         }
 
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss_with_l2
+        loss_fn = loss
 
         use_perfect_replay = False
 
@@ -419,6 +413,7 @@ def _(
 @app.cell
 def _(
     batch_size,
+    decay_lambda,
     device,
     img_n_channels,
     img_size,
@@ -439,13 +434,13 @@ def _(
             "learning_rate": learning_rate,
             "n_batches_per_task": n_batches_per_task,
             "test_size": test_size,
-            "decay_lambda": 4e-3,
+            "decay_lambda": decay_lambda,
         }
 
         evaluation_set = test_datasets[0]
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss_with_l2
+        loss_fn = loss
 
         use_perfect_replay = True
 
@@ -545,7 +540,7 @@ def _(out_dir):
             "performance": result.performance.tolist(),
             "switch_indices": result.switch_indices,
         }
-    
+
         with open(f"{out_dir}/results/{name}", 'w') as f:
             json.dump(mapped, f, indent=2)
     return (save_result_to_file,)

@@ -11,13 +11,21 @@ with app.setup:
     import matplotlib.pyplot as plt
     import os
     import json
-    from src.training import ExperimentResult
+    from training import ExperimentResult
 
 
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""# Evaluation""")
     return
+
+
+@app.cell
+def _():
+    displayed = [1, 2, 3, 4]
+
+    print(f"[INFO] Displaying results only for experiments: {displayed}")
+    return (displayed,)
 
 
 @app.cell
@@ -30,8 +38,9 @@ def _():
 
 
 @app.cell
-def _(result_dir):
+def _(displayed, result_dir):
     results = load_results_from_file(result_dir)
+    results = list(filter(lambda x: x.experiment_no in displayed, results))
     return (results,)
 
 
@@ -267,7 +276,7 @@ def load_results_from_file(dir):
 
         with open(f"{dir}/{path}", 'r') as f:
             obj = json.load(f)
-        
+
         res = ExperimentResult(
             obj['experiment_no'],
             obj['performance'],

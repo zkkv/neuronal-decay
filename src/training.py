@@ -190,20 +190,20 @@ class Experiment:
     A single experiment involving a set of parameters and approaches.
     '''
 
-    def __init__(self, experiment_no, model, parameters, evaluation_set, optimizer, loss_fn, use_perfect_replay):
+    def __init__(self, experiment_no, model, parameters, evaluation_sets, optimizer, loss_fn, use_perfect_replay):
         self.experiment_no = experiment_no
         self.model = model
         self.params = parameters
-        self.evaluation_set = evaluation_set
+        self.evaluation_sets = evaluation_sets
         self.optimizer = optimizer
         self.loss_fn = loss_fn
         self.use_perfect_replay = use_perfect_replay
 
-        self.performance = []
+        self.performances = []
         self.switch_indices = []
 
-    def set_performance_history(self, performance):
-        self.performance = performance
+    def set_performance_history(self, performances):
+        self.performances = performances
 
     def set_switch_indices(self, switch_indices):
         self.switch_indices = switch_indices
@@ -219,10 +219,14 @@ class ExperimentResult:
     A structure wrapping experiment results.
     '''
 
-    def __init__(self, experiment_no, performance, switch_indices):
+    def __init__(self, experiment_no, performances, switch_indices):
         self.experiment_no = experiment_no
-        self.performance = performance
+        self.performances = performances
         self.switch_indices = switch_indices
+
+    def __repr__(self):
+        attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
+        return f"{self.__class__.__name__}({attrs})"
 
 
 @app.function
@@ -254,10 +258,10 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
 
 
 @app.function
-def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size, performance, optimizer, loss_fn, decay_lambda):
+def train_and_eval(model, train_set, n_batches, batch_size, task_idx, test_sets, test_size, performance, optimizer, loss_fn, decay_lambda):
     '''
     Function to train a [model] on a given [train_set],
-    while evaluating after each training iteration on [test_set].
+    while evaluating after each training iteration on [test_sets].
     '''
     model.train()
     iters_left = 1
@@ -273,9 +277,13 @@ def train_and_eval(model, train_set, n_batches, batch_size, test_set, test_size,
         pred, decay = model(X)
 
         # Evaluation
-        accuracy = compute_accuracy(model, test_set, test_size, batch_size)
-        performance.append(accuracy)
         loss = loss_fn(pred, y) + decay_lambda * decay
+
+        for test_idx, test_set in enumerate(test_sets):
+            if test_idx >= task_idx:
+                break
+            accuracy = compute_accuracy(model, test_set, test_size, batch_size)
+            performance[test_idx].append(accuracy)
 
         # Backpropagation
         loss.backward()
@@ -325,14 +333,14 @@ def _(
             "decay_lambda": 0,
         }
 
-        evaluation_set = test_datasets[0]
+        evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
         loss_fn = loss
 
         use_perfect_replay = True
 
-        return Experiment(1, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
+        return Experiment(1, model, params, evaluation_sets, optimizer, loss_fn, use_perfect_replay)
     return (build_experiment_1_with_replay_no_decay,)
 
 
@@ -362,15 +370,15 @@ def _(
             "decay_lambda": 0,
         }
 
-        evaluation_set = test_datasets[0]
+        evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
         loss_fn = loss
 
         use_perfect_replay = False
 
-        return Experiment(2, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
-    return
+        return Experiment(2, model, params, evaluation_sets, optimizer, loss_fn, use_perfect_replay)
+    return (build_experiment_2_no_replay_no_decay,)
 
 
 @app.cell
@@ -400,15 +408,15 @@ def _(
             "decay_lambda": decay_lambda,
         }
 
-        evaluation_set = test_datasets[0]
+        evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
         loss_fn = loss
 
         use_perfect_replay = False
 
-        return Experiment(3, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
-    return
+        return Experiment(3, model, params, evaluation_sets, optimizer, loss_fn, use_perfect_replay)
+    return (build_experiment_3_no_replay_with_decay,)
 
 
 @app.cell
@@ -438,22 +446,22 @@ def _(
             "decay_lambda": decay_lambda,
         }
 
-        evaluation_set = test_datasets[0]
+        evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
         loss_fn = loss
 
         use_perfect_replay = True
 
-        return Experiment(4, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
+        return Experiment(4, model, params, evaluation_sets, optimizer, loss_fn, use_perfect_replay)
     return (build_experiment_4_with_replay_with_decay,)
 
 
 @app.cell
-def _(average_of, n_tasks, train_datasets):
+def _(average_of, n_batches_per_task, n_tasks, train_datasets):
     def run_experiment(experiment, run):
         print(f" Running experiment {experiment.experiment_no} (run {run}/{average_of}) ".center(60, "~"))
-        performance_history = []
+        performance_history = [[] for _ in range(n_tasks)]
         switch_indices = []
 
         for task_idx in range(1, n_tasks + 1):
@@ -469,14 +477,15 @@ def _(average_of, n_tasks, train_datasets):
                 dataset,
                 experiment.params["n_batches_per_task"],
                 experiment.params["batch_size"] * task_idx,
-                experiment.evaluation_set,
+                task_idx,
+                experiment.evaluation_sets,
                 experiment.params["test_size"],
                 performance_history,
                 experiment.optimizer,
                 experiment.loss_fn,
                 experiment.params["decay_lambda"],
             )
-            switch_indices.append(len(performance_history))
+            switch_indices.append(task_idx * n_batches_per_task)
 
         experiment.set_performance_history(performance_history)
         experiment.set_switch_indices(switch_indices)
@@ -494,8 +503,8 @@ def _(average_of, results_file, run_experiment):
                 run_experiment(e, r)
                 runs.append(e)
 
-            avg_performance = np.mean([r.performance for r in runs], axis=0)
-            res = ExperimentResult(runs[0].experiment_no, avg_performance, runs[0].switch_indices)
+            avg_performances = average_inhomogeneous([r.performances for r in runs])
+            res = ExperimentResult(runs[0].experiment_no, avg_performances, runs[0].switch_indices)
             results.append(res)
             print(f"Experiment {res.experiment_no} done!")
 
@@ -507,16 +516,39 @@ def _(average_of, results_file, run_experiment):
     return (run_experiments,)
 
 
+@app.function
+def average_inhomogeneous(xsss):
+    """
+    Average lists of the same shape across the first dimension.
+
+    Each element of xsss is a list xss such that len(xss[i]) is not necessarily equal to len(xss[j]) for i != j. However,
+    len(xsss[i]) must always be equal to len(xsss[j]) for any i, j.
+
+    This function returns a list of the same shape as xsss[i] for any i.
+    """
+    n_sublists = len(xsss[0])
+    res = []
+    
+    for i in range(n_sublists):
+        group = [xss[i] for xss in xsss]
+        stacked = np.stack(group, axis=0)
+        res.append(stacked.mean(axis=0).tolist())
+
+    return res
+
+
 @app.cell
 def _(
     build_experiment_1_with_replay_no_decay,
+    build_experiment_2_no_replay_no_decay,
+    build_experiment_3_no_replay_with_decay,
     build_experiment_4_with_replay_with_decay,
     run_experiments,
 ):
     experiment_builders = [
         build_experiment_1_with_replay_no_decay,
-        # build_experiment_2_no_replay_no_decay,
-        # build_experiment_3_no_replay_with_decay,
+        build_experiment_2_no_replay_no_decay,
+        build_experiment_3_no_replay_with_decay,
         build_experiment_4_with_replay_with_decay,
     ]
 
@@ -537,7 +569,7 @@ def save_results_to_file(results, results_file, should_log=True):
     for res in results:
         mapped_experiment = {
             "experiment_no": res.experiment_no,
-            "performance": res.performance.tolist(),
+            "performances": res.performances,
             "switch_indices": res.switch_indices,
         }
         mapped[f"{res.experiment_no}"] = mapped_experiment

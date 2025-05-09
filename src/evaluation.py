@@ -49,38 +49,19 @@ def _():
 
 
 @app.cell
-def _(plot_all, results):
+def _(plot_all_tasks_for_experiment, plot_task_1_for_all_experiments, results):
     plt.style.use('default')
 
-    plot_all(results, ylim=(0, 100))
+    plot_task_1_for_all_experiments(results, ylim=(0, 100))
+    plot_all_tasks_for_experiment(1, results, ylim=(0, 100))
+    plot_all_tasks_for_experiment(4, results, ylim=(0, 100))
     return
 
 
 @app.cell(hide_code=True)
 def _(plot_lines):
-    def plot_individually(results, ylim):
-        for result in results:
-            performances = [result.performance]
-            exp_n = result.experiment_no
-
-            figure = plot_lines(
-                performances,
-                line_names=['Performance'],
-                title=f"Performance on Task 1 throughout Experiment {exp_n}",
-                ylabel="Test Accuracy (%) on Task 1",
-                xlabel="Batch",
-                figsize=(10,5),
-                v_line=result.switch_indices[:-1],
-                v_label='Task switch', ylim=ylim,
-                save_as=f"plots/experiment_{exp_n}.svg"
-            )
-    return
-
-
-@app.cell(hide_code=True)
-def _(plot_lines):
-    def plot_all(results, ylim):
-        performances = [e.performance for e in results]
+    def plot_task_1_for_all_experiments(results, ylim):
+        performances = [e.performances[0] for e in results]
         exp_ns = [e.experiment_no for e in results]
 
         figure = plot_lines(
@@ -92,9 +73,33 @@ def _(plot_lines):
             figsize=(10,5),
             v_line=results[0].switch_indices[:-1],
             v_label='Task switch', ylim=ylim,
-            save_as=f"plots/experiment_{exp_ns}.svg"
+            save_as=f"plots/experiments_{exp_ns}_task_1.svg"
         )
-    return (plot_all,)
+    return (plot_task_1_for_all_experiments,)
+
+
+@app.cell(hide_code=True)
+def _(plot_lines):
+    def plot_all_tasks_for_experiment(experiment_no, results, ylim):
+        experiment = list(filter(lambda x: x.experiment_no == experiment_no, results))[0]
+        performances = experiment.performances
+        n_batches = experiment.switch_indices[-1]
+        x_axes = [range(n_batches - len(p), n_batches) for p in performances]
+        task_ns = list(range(1, len(performances) + 1))
+
+        figure = plot_lines(
+            performances,
+            x_axes=x_axes,
+            line_names=[f'Task {task_n}' for task_n in task_ns],
+            title=f"Performance on each task throughout Experiment {experiment_no}",
+            ylabel="Test Accuracy (%) on Task",
+            xlabel="Batch",
+            figsize=(10,5),
+            v_line=experiment.switch_indices[:-1],
+            v_label='Task switch', ylim=ylim,
+            save_as=f"plots/experiment_{experiment_no}_all_tasks.svg"
+        )
+    return (plot_all_tasks_for_experiment,)
 
 
 @app.cell(hide_code=True)
@@ -118,7 +123,7 @@ def _(out_dir):
         # if needed, generate default x-axis
         if x_axes == None:
             n_obs = len(list_with_lines[0])
-            x_axes = list(range(n_obs))
+            x_axes = [list(range(n_obs)) for _ in range(len(list_with_lines))]
 
         # if needed, generate default line-names
         if line_names == None:
@@ -144,7 +149,7 @@ def _(out_dir):
 
         # mean lines
         for line_id, name in enumerate(line_names):
-            axarr.plot(x_axes, list_with_lines[line_id], label=name,
+            axarr.plot(x_axes[line_id], list_with_lines[line_id], label=name,
                        color=None if (colors is None) else colors[line_id],
                        linewidth=4, marker='o' if with_dots else None, linestyle=linestyle if type(linestyle)==str else linestyle[line_id])
 
@@ -229,33 +234,32 @@ def _():
 @app.function
 def accuracy_at_task_switches(performance, switch_indices):
     res = []
-    for i in switch_indices:
-        res.append(performance[i - 1])
+    for i in switch_indices[:-1]:
+        res.append(performance[i])
     return res
 
 
 @app.function
 def gap_depths(performance, switch_indices):
     accs = accuracy_at_task_switches(performance, switch_indices)
-    accs.pop()
 
     res = []
     for i, acc in enumerate(accs):
         start, end = switch_indices[i], switch_indices[i + 1]
-        min_per_task = min(performance[start:end])
+        min_per_task = min(performance[start + 1:end])
         res.append(acc - min_per_task)
     return res
 
 
 @app.cell
 def _(results):
-    print("Accuracy at task switches:")
+    print("Accuracy of task 1 at task switches:")
     for e in results:
-        print(accuracy_at_task_switches(e.performance, e.switch_indices))
+        print(f"Experiment {e.experiment_no}:", accuracy_at_task_switches(e.performances[0], e.switch_indices))
 
-    print("\nGap depths:")
+    print("\nGap depths of task 1:")
     for e in results:
-        print(gap_depths(e.performance, e.switch_indices))
+        print(f"Experiment {e.experiment_no}:", gap_depths(e.performances[0], e.switch_indices))
     return
 
 
@@ -281,7 +285,7 @@ def _(displayed):
 
             res = ExperimentResult(
                 res_obj['experiment_no'],
-                res_obj['performance'],
+                res_obj['performances'],
                 res_obj['switch_indices'],
             )
             results.append(res)

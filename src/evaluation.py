@@ -31,15 +31,13 @@ def _():
 @app.cell
 def _():
     out_dir = "./out"
-    result_dir = f"{out_dir}/results"
-
-    print(f"[INFO] Result directory: {result_dir}")
-    return out_dir, result_dir
+    results_file = f"{out_dir}/results/results.json"
+    return out_dir, results_file
 
 
 @app.cell
-def _(displayed, result_dir):
-    results = load_results_from_file(result_dir)
+def _(displayed, load_results_from_file, results_file):
+    results = load_results_from_file(results_file)
     results = list(filter(lambda x: x.experiment_no in displayed, results))
     return (results,)
 
@@ -267,25 +265,30 @@ def _():
     return
 
 
-@app.function
-def load_results_from_file(dir):
-    results = []
-    for path in os.listdir(dir):
-        if not path.endswith(".json"):
-            continue
-
-        with open(f"{dir}/{path}", 'r') as f:
+@app.cell
+def _(displayed):
+    def load_results_from_file(results_file, should_log=True):
+        results = []
+        with open(results_file, 'r') as f:
+            if should_log:
+                print(f"[INFO] Reading results from {results_file}")
             obj = json.load(f)
 
-        res = ExperimentResult(
-            obj['experiment_no'],
-            obj['performance'],
-            obj['switch_indices'],
-        )
-        results.append(res)
+        for res_no in displayed:
+            res_obj = obj.get(str(res_no), None)
+            if res_obj == None:
+                continue
 
-    results = sorted(results, key=lambda e: e.experiment_no)
-    return results
+            res = ExperimentResult(
+                res_obj['experiment_no'],
+                res_obj['performance'],
+                res_obj['switch_indices'],
+            )
+            results.append(res)
+
+        results = sorted(results, key=lambda e: e.experiment_no)
+        return results
+    return (load_results_from_file,)
 
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ def _():
     batch_size = 512
     rotations = [0, 30, 160]
     learning_rate = 0.01
-    n_batches_per_task = 50 # FIXME
+    n_batches_per_task = 1 # FIXME
     test_size = 512
     average_of = 2  # FIXME
     decay_lambda = 1e-7
@@ -68,12 +68,13 @@ def _():
     data_dir = "~/.cache/ml/datasets/neuronal-decay"
     model_dir = "~/.cache/ml/models/neuronal-decay"
     out_dir = "./out"
+    results_file = f"{out_dir}/results/results.json"
 
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
     print(f"[INFO] Using device: {device}")
     print(f"[INFO] Data directory: {data_dir}, Model directory: {model_dir}, Output directory: {out_dir}")
-    return data_dir, device, out_dir
+    return data_dir, device, results_file
 
 
 @app.cell
@@ -123,10 +124,10 @@ def _(data_dir, rotations):
 
     # FIXME
     # TEMPORARILY REDUCE DATASET SIZE
-    # training_data = Subset(training_data, range(500))
-    # test_data = Subset(test_data, range(500))
-    training_data = Subset(training_data, range(2000))
-    test_data = Subset(test_data, range(2000))
+    training_data = Subset(training_data, range(500))
+    test_data = Subset(test_data, range(500))
+    # training_data = Subset(training_data, range(2000))
+    # test_data = Subset(test_data, range(2000))
     # training_data = Subset(training_data, range(5000))
     # test_data = Subset(test_data, range(5000))
 
@@ -167,7 +168,7 @@ class Classifier(nn.Module):
         l2_decay += torch.sum(a2**2)
 
         logits = self.fc3(a2)
-        
+
         return logits, l2_decay
 
 
@@ -369,7 +370,7 @@ def _(
         use_perfect_replay = False
 
         return Experiment(2, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
-    return (build_experiment_2_no_replay_no_decay,)
+    return
 
 
 @app.cell
@@ -407,7 +408,7 @@ def _(
         use_perfect_replay = False
 
         return Experiment(3, model, params, evaluation_set, optimizer, loss_fn, use_perfect_replay)
-    return (build_experiment_3_no_replay_with_decay,)
+    return
 
 
 @app.cell
@@ -483,7 +484,7 @@ def _(average_of, n_tasks, train_datasets):
 
 
 @app.cell
-def _(average_of, run_experiment, save_result_to_file):
+def _(average_of, results_file, run_experiment):
     def run_experiments(experiment_builders, persist_results=True):
         results = []
         for eb in experiment_builders:
@@ -498,8 +499,8 @@ def _(average_of, run_experiment, save_result_to_file):
             results.append(res)
             print(f"Experiment {res.experiment_no} done!")
 
-            if persist_results:
-                save_result_to_file(res)
+        if persist_results:
+            save_results_to_file(results, results_file)
 
         print("ALL EXPERIMENTS DONE!")
         return results
@@ -509,15 +510,13 @@ def _(average_of, run_experiment, save_result_to_file):
 @app.cell
 def _(
     build_experiment_1_with_replay_no_decay,
-    build_experiment_2_no_replay_no_decay,
-    build_experiment_3_no_replay_with_decay,
     build_experiment_4_with_replay_with_decay,
     run_experiments,
 ):
     experiment_builders = [
         build_experiment_1_with_replay_no_decay,
-        build_experiment_2_no_replay_no_decay,
-        build_experiment_3_no_replay_with_decay,
+        # build_experiment_2_no_replay_no_decay,
+        # build_experiment_3_no_replay_with_decay,
         build_experiment_4_with_replay_with_decay,
     ]
 
@@ -531,19 +530,22 @@ def _():
     return
 
 
-@app.cell
-def _(out_dir):
-    def save_result_to_file(result):
-        name = f"result_{result.experiment_no}.json"
-        mapped = {
-            "experiment_no": result.experiment_no,
-            "performance": result.performance.tolist(),
-            "switch_indices": result.switch_indices,
-        }
+@app.function
+def save_results_to_file(results, results_file, should_log=True):
+    mapped = {}
 
-        with open(f"{out_dir}/results/{name}", 'w') as f:
-            json.dump(mapped, f, indent=2)
-    return (save_result_to_file,)
+    for res in results:
+        mapped_experiment = {
+            "experiment_no": res.experiment_no,
+            "performance": res.performance.tolist(),
+            "switch_indices": res.switch_indices,
+        }
+        mapped[f"{res.experiment_no}"] = mapped_experiment
+
+    with open(results_file, 'w') as f:
+        if should_log:
+            print(f"[INFO] Saving results to {results_file}")
+        json.dump(mapped, f, indent=2)
 
 
 if __name__ == "__main__":

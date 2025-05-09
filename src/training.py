@@ -138,7 +138,7 @@ def _(data_dir, rotations):
         test_datasets.append(TransformedDataset(test_data, transform=transforms.RandomRotation(degrees=(r,r))))
 
     print(f"[INFO] Training set size = {len(training_data)}, Test set size = {len(test_data)}")
-    return test_datasets, train_datasets, training_data
+    return test_data, test_datasets, train_datasets, training_data
 
 
 @app.cell(hide_code=True)
@@ -219,10 +219,12 @@ class ExperimentResult:
     A structure wrapping experiment results.
     '''
 
-    def __init__(self, experiment_no, performances, switch_indices):
+    def __init__(self, experiment_no, performances, switch_indices, parameters=None, use_perfect_replay=None):
         self.experiment_no = experiment_no
         self.performances = performances
         self.switch_indices = switch_indices
+        self.params = parameters
+        self.use_perfect_replay = use_perfect_replay
 
     def __repr__(self):
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())
@@ -493,7 +495,7 @@ def _(average_of, n_batches_per_task, n_tasks, train_datasets):
 
 
 @app.cell
-def _(average_of, results_file, run_experiment):
+def _(average_of, results_file, run_experiment, save_results_to_file):
     def run_experiments(experiment_builders, persist_results=True):
         results = []
         for eb in experiment_builders:
@@ -504,7 +506,13 @@ def _(average_of, results_file, run_experiment):
                 runs.append(e)
 
             avg_performances = average_inhomogeneous([r.performances for r in runs])
-            res = ExperimentResult(runs[0].experiment_no, avg_performances, runs[0].switch_indices)
+            res = ExperimentResult(
+                runs[0].experiment_no,
+                avg_performances,
+                runs[0].switch_indices,
+                runs[0].params,
+                runs[0].use_perfect_replay
+            )
             results.append(res)
             print(f"Experiment {res.experiment_no} done!")
 
@@ -528,7 +536,7 @@ def average_inhomogeneous(xsss):
     """
     n_sublists = len(xsss[0])
     res = []
-    
+
     for i in range(n_sublists):
         group = [xss[i] for xss in xsss]
         stacked = np.stack(group, axis=0)
@@ -562,22 +570,47 @@ def _():
     return
 
 
-@app.function
-def save_results_to_file(results, results_file, should_log=True):
-    mapped = {}
+@app.cell
+def _(
+    average_of,
+    img_n_channels,
+    img_size,
+    n_classes,
+    n_tasks,
+    test_data,
+    training_data,
+):
+    def save_results_to_file(results, results_file, should_log=True):
+        mapped = {}
 
-    for res in results:
-        mapped_experiment = {
-            "experiment_no": res.experiment_no,
-            "performances": res.performances,
-            "switch_indices": res.switch_indices,
-        }
-        mapped[f"{res.experiment_no}"] = mapped_experiment
+        for res in results:
+            # Note: We save most values just for logging purposes.
+            #       Not everything is used for evaluation/visualization.
+            domain_vars = {
+                "n_tasks": n_tasks,
+                "n_classes": n_classes,
+                "img_n_channels": img_n_channels,
+                "img_size": img_size,
+                "len(training_data)": len(training_data),
+                "len(test_data)": len(test_data),
+            }
+        
+            mapped_experiment = {
+                "experiment_no": res.experiment_no,
+                "performances": res.performances,
+                "switch_indices": res.switch_indices,
+                "parameters": res.params,
+                "use_perfect_replay": res.use_perfect_replay,
+                "average_of": average_of,
+                "domain_variables": domain_vars,
+            }
+            mapped[f"{res.experiment_no}"] = mapped_experiment
 
-    with open(results_file, 'w') as f:
-        if should_log:
-            print(f"[INFO] Saving results to {results_file}")
-        json.dump(mapped, f, indent=2)
+        with open(results_file, 'w') as f:
+            if should_log:
+                print(f"[INFO] Saving results to {results_file}")
+            json.dump(mapped, f, indent=2)
+    return (save_results_to_file,)
 
 
 if __name__ == "__main__":

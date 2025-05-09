@@ -22,17 +22,17 @@ def _():
 
 @app.cell
 def _():
-    displayed = [1, 2, 3, 4]
-
-    print(f"[INFO] Displaying results only for experiments: {displayed}")
-    return (displayed,)
+    out_dir = "./out"
+    results_file = f"{out_dir}/results/results.json"
+    return out_dir, results_file
 
 
 @app.cell
 def _():
-    out_dir = "./out"
-    results_file = f"{out_dir}/results/results.json"
-    return out_dir, results_file
+    displayed = [1, 2, 3, 4]
+
+    print(f"[INFO] Displaying results only for experiments: {displayed}")
+    return (displayed,)
 
 
 @app.cell
@@ -246,7 +246,7 @@ def gap_depths(performance, switch_indices):
     res = []
     for i, acc in enumerate(accs):
         start, end = switch_indices[i], switch_indices[i + 1]
-        min_per_task = min(performance[start + 1:end])
+        min_per_task = min(performance[start+1:end]) if (end - start - 1 > 0) else performance[start] 
         res.append(acc - min_per_task)
     return res
 

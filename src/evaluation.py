@@ -232,30 +232,47 @@ def _():
 
 
 @app.function
-def accuracy_at_task_switches(performance, switch_indices):
+def accuracy_before_task_switches(performance, switch_indices):
+    '''
+    Compute the accuracy at the last batch before every task switch.
+    '''
     res = []
-    for i in switch_indices[:-1]:
-        res.append(performance[i])
+    for i in switch_indices:
+        res.append(performance[i - 1])
     return res
 
 
 @app.function
 def gap_depths(performance, switch_indices):
-    accs = accuracy_at_task_switches(performance, switch_indices)
+    '''
+    Compute the depth of the deepest gap between two consecutive task switches.
+    
+    The depth is computed as:
+    [accuracy before the task switch] - [accuracy at the lowest point at the task switch or after]
+
+    Negative values indicate an increase in accuracy after the task switch.
+
+    The result is an array of tuples with depths and the relative index of the gap (e.g. 0 is the first batch of the new task).
+    '''
+    accs = accuracy_before_task_switches(performance, switch_indices)
+    accs.pop()  # Don't compute for the last task
 
     res = []
     for i, acc in enumerate(accs):
         start, end = switch_indices[i], switch_indices[i + 1]
-        min_per_task = min(performance[start+1:end]) if (end - start - 1 > 0) else performance[start] 
-        res.append(acc - min_per_task)
+
+        arg_min_per_task = np.argmin(performance[start:end])
+        min_per_task = performance[arg_min_per_task]
+        
+        res.append((acc - min_per_task, arg_min_per_task.item()))
     return res
 
 
 @app.cell
 def _(results):
-    print("Accuracy of task 1 at task switches:")
+    print("Accuracy of task 1 before the task switch:")
     for e in results:
-        print(f"Experiment {e.experiment_no}:", accuracy_at_task_switches(e.performances[0], e.switch_indices))
+        print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))
 
     print("\nGap depths of task 1:")
     for e in results:

@@ -57,28 +57,33 @@ def _(
 ):
     plt.style.use('default')
 
-    plot_task_1_for_all_experiments(results, ylim=(0, 100))
-    plot_all_tasks_for_experiment(1, results, ylim=(0, 100))
-    plot_all_tasks_for_experiment(4, results, ylim=(0, 100))
+    plot_task_1_for_all_experiments(results, show_std=False, ylim=(0, 100))
+    plot_all_tasks_for_experiment(1, results, show_std=False, ylim=(0, 100))
+    plot_all_tasks_for_experiment(4, results, show_std=False, ylim=(0, 100))
     plot_average_accuracy(results, ylim=(0, 100))
     return
 
 
 @app.cell(hide_code=True)
 def _(plot_lines):
-    def plot_task_1_for_all_experiments(results, ylim):
+    def plot_task_1_for_all_experiments(results, show_std, ylim):
         performances = [e.performances[0] for e in results]
+        stds = None
+        if show_std:
+            stds = [e.stds[0] for e in results]
         exp_ns = [e.experiment_no for e in results]
 
         figure = plot_lines(
             performances,
+            list_with_errors=stds,
             line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
             title=f"Performance on Task 1 throughout Experiment(s): {exp_ns}",
             ylabel="Test Accuracy (%) on Task 1",
             xlabel="Batch",
             figsize=(10,5),
             v_line=results[0].switch_indices[:-1],
-            v_label='Task switch', ylim=ylim,
+            v_label='Task switch',
+            ylim=ylim,
             save_as=f"plots/experiments_{exp_ns}_task_1.svg"
         )
     return (plot_task_1_for_all_experiments,)
@@ -86,16 +91,21 @@ def _(plot_lines):
 
 @app.cell(hide_code=True)
 def _(plot_lines):
-    def plot_all_tasks_for_experiment(experiment_no, results, ylim):
+    def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim):
         experiment = list(filter(lambda x: x.experiment_no == experiment_no, results))[0]
         performances = experiment.performances
         n_batches = experiment.switch_indices[-1]
         x_axes = [range(n_batches - len(p), n_batches) for p in performances]
         task_ns = list(range(1, len(performances) + 1))
 
+        stds = None
+        if show_std:
+            stds = experiment.stds
+
         figure = plot_lines(
             performances,
             x_axes=x_axes,
+            list_with_errors=stds,
             line_names=[f'Task {task_n}' for task_n in task_ns],
             title=f"Performance on each task throughout Experiment {experiment_no}",
             ylabel="Test Accuracy (%) on Task",
@@ -133,6 +143,8 @@ def _(plot_lines):
 
 @app.cell(hide_code=True)
 def _(out_dir):
+    # Code taken, with some adjustments, from:
+    # https://github.com/GMvandeVen/continual-learning/blob/50b8b7fce9786dc402866fc8387e1525f369bbc5/visual/visual_plt.py#L103
     def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title=None,
                    title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
                    x_log=False, with_dots=False, linestyle='solid', h_line=None, h_label=None, h_error=None,
@@ -167,14 +179,27 @@ def _(out_dir):
         if list_with_errors is not None:
             for line_id, name in enumerate(line_names):
                 if errors=="shaded":
-                    axarr.fill_between(x_axes, list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])),
-                                       list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])),
-                                       color=None if (colors is None) else colors[line_id], alpha=0.25)
+                    axarr.fill_between(
+                        x_axes[line_id], 
+                        list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])),
+                        list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])),
+                        color=None if (colors is None) else colors[line_id],
+                        alpha=0.25)
                 else:
-                    axarr.plot(x_axes, list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])), label=None,
-                               color=None if (colors is None) else colors[line_id], linewidth=1, linestyle='dashed')
-                    axarr.plot(x_axes, list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])), label=None,
-                               color=None if (colors is None) else colors[line_id], linewidth=1, linestyle='dashed')
+                    axarr.plot(
+                        x_axes[line_id],
+                        list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])),
+                        label=None,
+                        color=None if (colors is None) else colors[line_id],
+                        linewidth=1,
+                        linestyle='dashed')
+                    axarr.plot(
+                        x_axes[line_id],
+                        list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])),
+                        label=None,
+                        color=None if (colors is None) else colors[line_id],
+                        linewidth=1,
+                        linestyle='dashed')
 
         # mean lines
         for line_id, name in enumerate(line_names):

@@ -49,12 +49,18 @@ def _():
 
 
 @app.cell
-def _(plot_all_tasks_for_experiment, plot_task_1_for_all_experiments, results):
+def _(
+    plot_all_tasks_for_experiment,
+    plot_average_accuracy,
+    plot_task_1_for_all_experiments,
+    results,
+):
     plt.style.use('default')
 
     plot_task_1_for_all_experiments(results, ylim=(0, 100))
     plot_all_tasks_for_experiment(1, results, ylim=(0, 100))
     plot_all_tasks_for_experiment(4, results, ylim=(0, 100))
+    plot_average_accuracy(results, ylim=(0, 100))
     return
 
 
@@ -100,6 +106,29 @@ def _(plot_lines):
             save_as=f"plots/experiment_{experiment_no}_all_tasks.svg"
         )
     return (plot_all_tasks_for_experiment,)
+
+
+@app.cell(hide_code=True)
+def _(plot_lines):
+    def plot_average_accuracy(results, ylim):
+        performances = [e.performances for e in results]
+        exp_ns = [e.experiment_no for e in results]
+        switch_indices = results[0].switch_indices
+
+        avg_accuracies = [average_accuracy(perfs, switch_indices) for perfs in performances]
+
+        figure = plot_lines(
+            avg_accuracies,
+            line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
+            title=f"Average accuracy on all tasks throughout Experiment(s): {exp_ns}",
+            ylabel="Average accuracy (%) on all tasks",
+            xlabel="Batch",
+            figsize=(10,5),
+            v_line=switch_indices[:-1],
+            v_label='Task switch', ylim=ylim,
+            save_as=f"plots/experiments_{exp_ns}_avg.svg"
+        )
+    return (plot_average_accuracy,)
 
 
 @app.cell(hide_code=True)
@@ -231,6 +260,26 @@ def _():
     return
 
 
+@app.cell
+def _(results):
+    print("Accuracy of task 1 before the task switch:")
+    for e in results:
+        print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))
+
+    print("\nAverage accuracy across all tasks (that are there at the time of computation):")
+    for e in results:
+        print(f"Experiment {e.experiment_no}:", average_accuracy(e.performances, e.switch_indices))
+
+    print("\nGap depths of task 1 accuracy (p. p.):")
+    for e in results:
+        print(f"Experiment {e.experiment_no}:", gap_depths(e.performances[0], e.switch_indices))
+
+    print("\nTime to recover for task 1 accuracy (batches):")
+    for e in results:
+        print(f"Experiment {e.experiment_no}:", time_to_recover(e.performances[0], e.switch_indices))
+    return
+
+
 @app.function
 def accuracy_before_task_switches(performance, switch_indices):
     '''
@@ -303,20 +352,31 @@ def time_to_recover(performance, switch_indices):
     return res
 
 
-@app.cell
-def _(results):
-    print("Accuracy of task 1 before the task switch:")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))
+@app.function
+def average_accuracy(performances, switch_indices):
+    '''
+    Compute average accuracy across tasks for each interval between two task switches.
 
-    print("\nGap depths of task 1 accuracy:")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", gap_depths(e.performances[0], e.switch_indices))
+    Each interval considers accuracy only of those tasks that are in progress or have been completed.
+    For instance, the first interval only accounts for task 1, the second interval accounts
+    for task 1 and task 2, and so on. The last interval includes all tasks in its computation.
 
-    print("\nTime to recover for task 1 accuracy (in batches):")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", time_to_recover(e.performances[0], e.switch_indices))
-    return
+    The result is a single list of accuracy values with the same length as performances. 
+    '''
+    n_batches = switch_indices[-1]
+    reversed_performances = [list(reversed(sublist)) for sublist in performances]
+    res = []
+    curr = 0
+
+    while len(res) < n_batches:
+        while curr < len(reversed_performances[-1]):
+            heads = [sublist[curr] for sublist in reversed_performances]
+            avg = np.mean(heads).item()
+            res.append(avg)
+            curr += 1
+        reversed_performances.pop()
+        
+    return list(reversed(res))
 
 
 @app.cell(hide_code=True)

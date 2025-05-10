@@ -295,7 +295,7 @@ def accuracy_before_task_switches(performance, switch_indices):
 def gap_depths(performance, switch_indices):
     '''
     Compute the depth of the deepest gap between two consecutive task switches.
-    
+
     The depth is computed as:
     [accuracy before the task switch] - [accuracy at the lowest point at the task switch or after]
 
@@ -312,7 +312,7 @@ def gap_depths(performance, switch_indices):
 
         arg_min_per_task = np.argmin(performance[start:end])
         min_per_task = performance[arg_min_per_task]
-        
+
         res.append((acc - min_per_task, arg_min_per_task.item()))
     return res
 
@@ -341,14 +341,14 @@ def time_to_recover(performance, switch_indices):
         arg_gap_absolute = arg_gap + start
         target = accs[i]
         sliced = np.array(performance[arg_gap_absolute:])
-        
+
         rel_idx = np.argmax(sliced >= target) if np.any(sliced >= target) else None
         if rel_idx == None:
             res.append(None)
         else:
             ttr = (rel_idx + arg_gap).item()
             res.append(ttr)
-    
+
     return res
 
 
@@ -375,7 +375,7 @@ def average_accuracy(performances, switch_indices):
             res.append(avg)
             curr += 1
         reversed_performances.pop()
-        
+
     return list(reversed(res))
 
 
@@ -403,6 +403,7 @@ def _(displayed):
                 res_obj['experiment_no'],
                 res_obj['performances'],
                 res_obj['switch_indices'],
+                stds=res_obj['stds'],
             )
             results.append(res)
 

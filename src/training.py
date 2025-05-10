@@ -219,10 +219,11 @@ class ExperimentResult:
     A structure wrapping experiment results.
     '''
 
-    def __init__(self, experiment_no, performances, switch_indices, parameters=None, use_perfect_replay=None):
+    def __init__(self, experiment_no, performances, switch_indices, stds=None, parameters=None, use_perfect_replay=None):
         self.experiment_no = experiment_no
         self.performances = performances
         self.switch_indices = switch_indices
+        self.stds = stds
         self.params = parameters
         self.use_perfect_replay = use_perfect_replay
 
@@ -505,13 +506,14 @@ def _(average_of, results_file, run_experiment, save_results_to_file):
                 run_experiment(e, r)
                 runs.append(e)
 
-            avg_performances = average_inhomogeneous([r.performances for r in runs])
+            avg_performances, stds = average_inhomogeneous([r.performances for r in runs])
             res = ExperimentResult(
                 runs[0].experiment_no,
                 avg_performances,
                 runs[0].switch_indices,
-                runs[0].params,
-                runs[0].use_perfect_replay
+                stds=stds,
+                parameters=runs[0].params,
+                use_perfect_replay=runs[0].use_perfect_replay
             )
             results.append(res)
             print(f"Experiment {res.experiment_no} done!")
@@ -527,22 +529,34 @@ def _(average_of, results_file, run_experiment, save_results_to_file):
 @app.function
 def average_inhomogeneous(xsss):
     """
-    Average lists of the same shape across the first dimension.
+    Average lists of the same shape along the first dimension.
 
     Each element of xsss is a list xss such that len(xss[i]) is not necessarily equal to len(xss[j]) for i != j. However,
     len(xsss[i]) must always be equal to len(xsss[j]) for any i, j.
 
-    This function returns a list of the same shape as xsss[i] for any i.
+    This function returns a list of averages as the first element and 
+    a list of standard deviations as the second element, both of the same shape as xsss[i] for any i.
+
+    Example:
+    a = [[1, 2, 3], [10, 20, 30, 40], [100]]
+    b = [[4, 5, 6], [50, 60, 70, 80], [600]]
+
+    >>> average_inhomogeneous([a, b])[0]
+    [[2.5, 3.5, 4.5], [30, 40, 50, 60], [350]]
     """
     n_sublists = len(xsss[0])
-    res = []
+    avgs = []
+    stds = []
 
     for i in range(n_sublists):
         group = [xss[i] for xss in xsss]
         stacked = np.stack(group, axis=0)
-        res.append(stacked.mean(axis=0).tolist())
+        avg = stacked.mean(axis=0).tolist()
+        std = stacked.std(axis=0, ddof=0).tolist()
+        avgs.append(avg)
+        stds.append(std)
 
-    return res
+    return avgs, stds
 
 
 @app.cell
@@ -594,11 +608,12 @@ def _(
                 "len(training_data)": len(training_data),
                 "len(test_data)": len(test_data),
             }
-        
+
             mapped_experiment = {
                 "experiment_no": res.experiment_no,
                 "performances": res.performances,
                 "switch_indices": res.switch_indices,
+                "stds": res.stds,
                 "parameters": res.params,
                 "use_perfect_replay": res.use_perfect_replay,
                 "average_of": average_of,

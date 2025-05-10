@@ -300,7 +300,7 @@ def train_and_eval(model, train_set, n_batches, batch_size, task_idx, test_sets,
 
 
 @app.function
-def loss(prediction, y, reduction='mean'):
+def ce_loss(prediction, y, reduction='mean'):
     return F.cross_entropy(input=prediction, target=y, reduction=reduction)
 
 
@@ -339,7 +339,7 @@ def _(
         evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss
+        loss_fn = ce_loss
 
         use_perfect_replay = True
 
@@ -376,7 +376,7 @@ def _(
         evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss
+        loss_fn = ce_loss
 
         use_perfect_replay = False
 
@@ -414,7 +414,7 @@ def _(
         evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss
+        loss_fn = ce_loss
 
         use_perfect_replay = False
 
@@ -452,7 +452,7 @@ def _(
         evaluation_sets = test_datasets
 
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.999))
-        loss_fn = loss
+        loss_fn = ce_loss
 
         use_perfect_replay = True
 

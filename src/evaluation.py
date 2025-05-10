@@ -268,15 +268,54 @@ def gap_depths(performance, switch_indices):
     return res
 
 
+@app.function
+def time_to_recover(performance, switch_indices):
+    '''
+    Compute time to recover (in number of batches) from the gap to the previous accuracy level.
+    Value is computed after every task switch.
+
+        1. Find the lowest gap between two consecutive task switches.
+        2. Find the first point after the gap where the accuracy is at least that at the end of the previous task.
+        3. Find the difference between time values of the two.
+
+    If the accuracy never recoveres, the resulting value is None.
+    '''
+    accs = accuracy_before_task_switches(performance, switch_indices)
+    accs.pop()  # Don't compute for the last task
+
+    depths = gap_depths(performance, switch_indices)
+
+    res = []
+
+    for i, (_, arg_gap) in enumerate(depths):
+        start = switch_indices[i]
+        arg_gap_absolute = arg_gap + start
+        target = accs[i]
+        sliced = np.array(performance[arg_gap_absolute:])
+        
+        rel_idx = np.argmax(sliced >= target) if np.any(sliced >= target) else None
+        if rel_idx == None:
+            res.append(None)
+        else:
+            ttr = (rel_idx + arg_gap).item()
+            res.append(ttr)
+    
+    return res
+
+
 @app.cell
 def _(results):
     print("Accuracy of task 1 before the task switch:")
     for e in results:
         print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))
 
-    print("\nGap depths of task 1:")
+    print("\nGap depths of task 1 accuracy:")
     for e in results:
         print(f"Experiment {e.experiment_no}:", gap_depths(e.performances[0], e.switch_indices))
+
+    print("\nTime to recover for task 1 accuracy (in batches):")
+    for e in results:
+        print(f"Experiment {e.experiment_no}:", time_to_recover(e.performances[0], e.switch_indices))
     return
 
 

@@ -308,8 +308,8 @@ def _(compute_accuracy, device):
 
             # Logging
             if batch_idx % print_every_n == 0: 
-                print('Training loss: {loss:04f} | Test accuracy: {prec:05.2f}% | Batch: {b_index}'
-                    .format(loss=loss.item(), prec=accuracy, b_index=batch_idx))
+                print('Training loss: {loss:04f} | Test accuracy (task 1): {prec:05.2f}% | Batch: {b_index}'
+                    .format(loss=loss.item(), prec=performance[0][-1], b_index=batch_idx))
     return (train_and_eval,)
 
 

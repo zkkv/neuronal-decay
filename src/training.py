@@ -43,7 +43,7 @@ def _():
 def _():
     # Hyperparameters
     batch_size = 512
-    rotations = [0, 30, 160]
+    rotations = [0, 160] # FIXME
     learning_rate = 0.01
     n_batches_per_task = 1 # FIXME
     test_size = 512
@@ -170,6 +170,13 @@ class Classifier(nn.Module):
         logits = self.fc3(a2)
 
         return logits, l2_decay
+
+
+@app.cell
+def _(img_n_channels, img_size, n_classes):
+    def get_model():
+        return Classifier(img_size, img_n_channels, n_classes)
+    return (get_model,)
 
 
 @app.cell(hide_code=True)
@@ -314,17 +321,15 @@ def _():
 def _(
     batch_size,
     device,
-    img_n_channels,
-    img_size,
+    get_model,
     learning_rate,
     n_batches_per_task,
-    n_classes,
     rotations,
     test_datasets,
     test_size,
 ):
     def build_experiment_1_with_replay_no_decay():
-        model = Classifier(img_size, img_n_channels, n_classes)
+        model = get_model()
         model.to(device)
 
         params = {
@@ -351,17 +356,15 @@ def _(
 def _(
     batch_size,
     device,
-    img_n_channels,
-    img_size,
+    get_model,
     learning_rate,
     n_batches_per_task,
-    n_classes,
     rotations,
     test_datasets,
     test_size,
 ):
     def build_experiment_2_no_replay_no_decay():
-        model = Classifier(img_size, img_n_channels, n_classes)
+        model = get_model()
         model.to(device)
 
         params = {
@@ -389,17 +392,15 @@ def _(
     batch_size,
     decay_lambda,
     device,
-    img_n_channels,
-    img_size,
+    get_model,
     learning_rate,
     n_batches_per_task,
-    n_classes,
     rotations,
     test_datasets,
     test_size,
 ):
     def build_experiment_3_no_replay_with_decay():
-        model = Classifier(img_size, img_n_channels, n_classes)
+        model = get_model()
         model.to(device)
 
         params = {
@@ -427,17 +428,15 @@ def _(
     batch_size,
     decay_lambda,
     device,
-    img_n_channels,
-    img_size,
+    get_model,
     learning_rate,
     n_batches_per_task,
-    n_classes,
     rotations,
     test_datasets,
     test_size,
 ):
     def build_experiment_4_with_replay_with_decay():
-        model = Classifier(img_size, img_n_channels, n_classes)
+        model = get_model()
         model.to(device)
 
         params = {

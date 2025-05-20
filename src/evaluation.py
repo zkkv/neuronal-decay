@@ -378,7 +378,7 @@ def gap_depths(performance, switch_indices):
         start, end = switch_indices[i], switch_indices[i + 1]
 
         arg_min_per_task = np.argmin(performance[start:end])
-        min_per_task = performance[arg_min_per_task]
+        min_per_task = performance[arg_min_per_task + start]
 
         res.append((acc - min_per_task, arg_min_per_task.item()))
     return res

@@ -14,10 +14,11 @@ with app.setup:
     from torch import nn
     import torch.nn.functional as F
     import json
+    import os
     from utilities import TransformedDataset, CircularIterator, average_inhomogeneous, make_dirs
 
     DETERMINISTIC = False  # FIXME
-    SEED = 43
+    SEED = 43  # FIXME
 
     if DETERMINISTIC:
         np.random.seed(SEED)
@@ -61,8 +62,7 @@ def _():
 @app.cell
 def _():
     # Configuration
-    data_dir = "~/.cache/ml/datasets/neuronal-decay"
-    model_dir = "~/.cache/ml/models/neuronal-decay"
+    data_dir = os.path.expanduser("~/.cache/ml/datasets/neuronal-decay")
     out_dir = "./out"
     results_dir = f"{out_dir}/results"
 
@@ -70,10 +70,10 @@ def _():
 
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
-    make_dirs([data_dir, model_dir, out_dir, results_dir])
+    make_dirs([data_dir, out_dir, results_dir])
 
     print(f"[INFO] Using device: {device}")
-    print(f"[INFO] Data directory: {data_dir}, Model directory: {model_dir}, Results directory: {results_dir}")
+    print(f"[INFO] Data directory: {data_dir}, Results directory: {results_dir}")
     return data_dir, device, results_file
 
 

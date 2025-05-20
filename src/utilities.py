@@ -54,7 +54,7 @@ class CircularIterator:
 
 
 @app.function
-def average_inhomogeneous(xsss):
+def average_inhomogeneous(xsss, compute_std=True):
     """
     Average lists of the same shape along the first dimension.
 
@@ -79,11 +79,15 @@ def average_inhomogeneous(xsss):
         group = [xss[i] for xss in xsss]
         stacked = np.stack(group, axis=0)
         avg = stacked.mean(axis=0).tolist()
-        std = stacked.std(axis=0, ddof=0).tolist()
         avgs.append(avg)
-        stds.append(std)
 
-    return avgs, stds
+        if compute_std:
+            std = stacked.std(axis=0, ddof=0).tolist()
+            stds.append(std)
+
+    if compute_std:
+        return avgs, stds
+    return avgs, None
 
 
 @app.function

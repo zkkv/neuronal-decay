@@ -28,7 +28,9 @@ def _():
     make_dirs([plots_dir])
 
     SEEDS = [42, 43]
-    return SEEDS, plots_dir, results_dir
+    average_of = len(SEEDS)
+    print(f"[INFO] Averaging over these {average_of} seeds: {SEEDS}")
+    return SEEDS, average_of, plots_dir, results_dir
 
 
 @app.cell
@@ -40,8 +42,8 @@ def _():
 
 
 @app.cell
-def _(SEEDS, displayed, load_results_from_file, results_dir):
-    def get_aggregated_results(seeds, results_dir):
+def _(SEEDS, average_of, displayed, load_results_from_file, results_dir):
+    def get_aggregated_results(seeds, results_dir, average_of):
         '''
         Average results for each experiment across multiple runs.
 
@@ -51,6 +53,10 @@ def _(SEEDS, displayed, load_results_from_file, results_dir):
         To avoid issues, all JSON files should have the same format and
         the experiments should have the same experimental setups, i.e. only the seed should change.
         '''
+
+        if average_of == 1:
+            print("[WARN] Using only one seed, so sample SD won't be computed")
+
         # Load every JSON results file from each run
         runs = []
         for seed in seeds:
@@ -69,7 +75,7 @@ def _(SEEDS, displayed, load_results_from_file, results_dir):
                 collected.append(single_result)
 
             # Average the results and save it as a single experiment
-            avg_performances, stds = average_inhomogeneous([c.performances for c in collected])
+            avg_performances, stds = average_inhomogeneous([c.performances for c in collected], compute_std=(average_of >= 2))
             res = ExperimentResult(
                 collected[0].experiment_no,
                 avg_performances,
@@ -82,7 +88,7 @@ def _(SEEDS, displayed, load_results_from_file, results_dir):
 
         return aggregated
 
-    results = get_aggregated_results(SEEDS, results_dir)
+    results = get_aggregated_results(SEEDS, results_dir, average_of)
     return (results,)
 
 
@@ -108,7 +114,10 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir):
     performances = [e.performances[0] for e in results]
     stds = None
     if show_std:
-        stds = [e.stds[0] for e in results]
+        try:
+            stds = [e.stds[0] for e in results]
+        except TypeError:
+            stds = None
     exp_ns = [e.experiment_no for e in results]
 
     figure = plot_lines(
@@ -136,7 +145,10 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 
     stds = None
     if show_std:
-        stds = experiment.stds
+        try:
+            stds = experiment.stds
+        except TypeError:
+            stds = None
 
     figure = plot_lines(
         performances,

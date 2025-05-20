@@ -19,7 +19,7 @@ with app.setup:
     from utilities import TransformedDataset, CircularIterator, average_inhomogeneous
 
     DETERMINISTIC = False  # FIXME
-    SEED = 42
+    SEED = 43
 
     if DETERMINISTIC:
         np.random.seed(SEED)
@@ -224,12 +224,13 @@ class ExperimentResult:
     A structure wrapping experiment results.
     '''
 
-    def __init__(self, experiment_no, performances, switch_indices, parameters=None, use_perfect_replay=None):
+    def __init__(self, experiment_no, performances, switch_indices, parameters=None, use_perfect_replay=None, stds=None):
         self.experiment_no = experiment_no
         self.performances = performances
         self.switch_indices = switch_indices
         self.params = parameters
         self.use_perfect_replay = use_perfect_replay
+        self.stds = stds
 
     def __repr__(self):
         attrs = ", ".join(f"{k}={v!r}" for k, v in self.__dict__.items())

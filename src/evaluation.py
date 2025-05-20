@@ -12,6 +12,7 @@ with app.setup:
     import os
     import json
     from training import ExperimentResult
+    from utilities import average_inhomogeneous
 
 
 @app.cell(hide_code=True)
@@ -23,8 +24,8 @@ def _():
 @app.cell
 def _():
     out_dir = "./out"
-    results_file = f"{out_dir}/results/results_42.json" # FIXME: Seed is currently hardcoded 
-    return out_dir, results_file
+    SEEDS = [42, 43]
+    return SEEDS, out_dir
 
 
 @app.cell
@@ -36,9 +37,49 @@ def _():
 
 
 @app.cell
-def _(displayed, load_results_from_file, results_file):
-    results = load_results_from_file(results_file)
-    results = list(filter(lambda x: x.experiment_no in displayed, results))
+def _(SEEDS, displayed, load_results_from_file, out_dir):
+    def get_aggregated_results(seeds):
+        '''
+        Average results for each experiment across multiple runs.
+
+        Each run is stored in a separate JSON file and is named "results_SEED.json" where SEED 
+        refers to the seed of the run.
+    
+        To avoid issues, all JSON files should have the same format and
+        the experiments should have the same experimental setups, i.e. only the seed should change.
+        '''
+        # Load every JSON results file from each run
+        runs = []
+        for seed in seeds:
+            results_file = f"{out_dir}/results/results_{seed}.json"
+            results_from_file = load_results_from_file(results_file)
+            results_from_file = list(filter(lambda x: x.experiment_no in displayed, results_from_file))
+            runs.append(results_from_file)
+
+        # Average results from one or more JSON files per experiment
+        aggregated = []
+        for exp_no in displayed:
+            # Collect results for a single experiment from all files
+            collected = []
+            for run in runs:
+                single_result = list(filter(lambda x: x.experiment_no == exp_no, run))[0]
+                collected.append(single_result)
+
+            # Average the results and save it as a single experiment
+            avg_performances, stds = average_inhomogeneous([c.performances for c in collected])
+            res = ExperimentResult(
+                collected[0].experiment_no,
+                avg_performances,
+                collected[0].switch_indices,
+                parameters=collected[0].params,
+                use_perfect_replay=collected[0].use_perfect_replay,
+                stds=stds,
+            )
+            aggregated.append(res)
+
+        return aggregated
+    
+    results = get_aggregated_results(SEEDS)
     return (results,)
 
 
@@ -70,7 +111,7 @@ def _(plot_lines):
         performances = [e.performances[0] for e in results]
         stds = None
         if show_std:
-            raise NotImplementedError("Can't compute STD yet")
+            stds = [e.stds[0] for e in results]
         exp_ns = [e.experiment_no for e in results]
 
         figure = plot_lines(
@@ -100,7 +141,7 @@ def _(plot_lines):
 
         stds = None
         if show_std:
-            raise NotImplementedError("Can't compute STD yet")
+            stds = experiment.stds
 
         figure = plot_lines(
             performances,

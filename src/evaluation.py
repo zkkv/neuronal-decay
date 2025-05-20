@@ -23,7 +23,7 @@ def _():
 @app.cell
 def _():
     out_dir = "./out"
-    results_file = f"{out_dir}/results/results.json"
+    results_file = f"{out_dir}/results/results_42.json" # FIXME: Seed is currently hardcoded 
     return out_dir, results_file
 
 
@@ -70,7 +70,7 @@ def _(plot_lines):
         performances = [e.performances[0] for e in results]
         stds = None
         if show_std:
-            stds = [e.stds[0] for e in results]
+            raise NotImplementedError("Can't compute STD yet")
         exp_ns = [e.experiment_no for e in results]
 
         figure = plot_lines(
@@ -100,7 +100,7 @@ def _(plot_lines):
 
         stds = None
         if show_std:
-            stds = experiment.stds
+            raise NotImplementedError("Can't compute STD yet")
 
         figure = plot_lines(
             performances,
@@ -428,7 +428,6 @@ def _(displayed):
                 res_obj['experiment_no'],
                 res_obj['performances'],
                 res_obj['switch_indices'],
-                stds=res_obj['stds'],
             )
             results.append(res)
 

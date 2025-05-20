@@ -45,14 +45,12 @@ def _():
     batch_size = 512
     rotations = [0, 160] # FIXME
     learning_rate = 0.01
-    n_batches_per_task = 1 # FIXME
+    n_batches_per_task = 3 # FIXME
     test_size = 512
-    average_of = 2  # FIXME
     decay_lambda = 1e-7
 
-    print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}, {average_of=}")
+    print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}")
     return (
-        average_of,
         batch_size,
         decay_lambda,
         learning_rate,
@@ -68,7 +66,7 @@ def _():
     data_dir = "~/.cache/ml/datasets/neuronal-decay"
     model_dir = "~/.cache/ml/models/neuronal-decay"
     out_dir = "./out"
-    results_file = f"{out_dir}/results/results.json"
+    results_file = f"{out_dir}/results/results_{SEED}.json"
 
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
@@ -226,11 +224,10 @@ class ExperimentResult:
     A structure wrapping experiment results.
     '''
 
-    def __init__(self, experiment_no, performances, switch_indices, stds=None, parameters=None, use_perfect_replay=None):
+    def __init__(self, experiment_no, performances, switch_indices, parameters=None, use_perfect_replay=None):
         self.experiment_no = experiment_no
         self.performances = performances
         self.switch_indices = switch_indices
-        self.stds = stds
         self.params = parameters
         self.use_perfect_replay = use_perfect_replay
 
@@ -288,7 +285,7 @@ def _(compute_accuracy, device):
 
             X, y = next(dataloader)
             X, y = X.to(device), y.to(device)
-        
+
             # Prediction
             pred, decay = model(X)
 
@@ -467,9 +464,9 @@ def _(
 
 
 @app.cell
-def _(average_of, n_batches_per_task, n_tasks, train_and_eval, train_datasets):
-    def run_experiment(experiment, run):
-        print(f" Running experiment {experiment.experiment_no} (run {run}/{average_of}) ".center(60, "~"))
+def _(n_batches_per_task, n_tasks, train_and_eval, train_datasets):
+    def run_experiment(experiment):
+        print(f" Running experiment {experiment.experiment_no}".center(60, "~"))
         performance_history = [[] for _ in range(n_tasks)]
         switch_indices = []
 
@@ -502,30 +499,25 @@ def _(average_of, n_batches_per_task, n_tasks, train_and_eval, train_datasets):
 
 
 @app.cell
-def _(average_of, results_file, run_experiment, save_results_to_file):
+def _(results_file, run_experiment, save_results_to_file):
     def run_experiments(experiment_builders, persist_results=True):
         results = []
         for eb in experiment_builders:
-            runs = []
-            for r in range(1, average_of + 1):
-                e = eb()
-                run_experiment(e, r)
-                runs.append(e)
+            e = eb()
+            run_experiment(e)
 
-            avg_performances, stds = average_inhomogeneous([r.performances for r in runs])
             res = ExperimentResult(
-                runs[0].experiment_no,
-                avg_performances,
-                runs[0].switch_indices,
-                stds=stds,
-                parameters=runs[0].params,
-                use_perfect_replay=runs[0].use_perfect_replay
+                e.experiment_no,
+                e.performances,
+                e.switch_indices,
+                parameters=e.params,
+                use_perfect_replay=e.use_perfect_replay
             )
             results.append(res)
             print(f"Experiment {res.experiment_no} done!")
 
         if persist_results:
-            save_results_to_file(results, results_file)
+            save_results_to_file(results, results_file, SEED)
 
         print("ALL EXPERIMENTS DONE!")
         return results
@@ -558,16 +550,8 @@ def _():
 
 
 @app.cell
-def _(
-    average_of,
-    img_n_channels,
-    img_size,
-    n_classes,
-    n_tasks,
-    test_data,
-    training_data,
-):
-    def save_results_to_file(results, results_file, should_log=True):
+def _(img_n_channels, img_size, n_classes, n_tasks, test_data, training_data):
+    def save_results_to_file(results, results_file, seed, should_log=True):
         mapped = {}
 
         for res in results:
@@ -586,11 +570,10 @@ def _(
                 "experiment_no": res.experiment_no,
                 "performances": res.performances,
                 "switch_indices": res.switch_indices,
-                "stds": res.stds,
                 "parameters": res.params,
                 "use_perfect_replay": res.use_perfect_replay,
-                "average_of": average_of,
                 "domain_variables": domain_vars,
+                "seed": seed,
             }
             mapped[f"{res.experiment_no}"] = mapped_experiment
 

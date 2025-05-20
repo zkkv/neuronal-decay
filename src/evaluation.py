@@ -27,7 +27,7 @@ def _():
 
     make_dirs([plots_dir])
 
-    SEEDS = [42, 43]
+    SEEDS = [43]
     average_of = len(SEEDS)
     print(f"[INFO] Averaging over these {average_of} seeds: {SEEDS}")
     return SEEDS, average_of, plots_dir, results_dir
@@ -43,6 +43,15 @@ def _():
 
 @app.cell
 def _(SEEDS, average_of, displayed, load_results_from_file, results_dir):
+    def get_matching(runs, exp_no):
+        collected = []
+        for run in runs:
+            matching = list(filter(lambda x: x.experiment_no == exp_no, run))
+            if len(matching) == 0:
+                return None
+            collected.append(matching[0])
+        return collected
+
     def get_aggregated_results(seeds, results_dir, average_of):
         '''
         Average results for each experiment across multiple runs.
@@ -69,10 +78,9 @@ def _(SEEDS, average_of, displayed, load_results_from_file, results_dir):
         aggregated = []
         for exp_no in displayed:
             # Collect results for a single experiment from all files
-            collected = []
-            for run in runs:
-                single_result = list(filter(lambda x: x.experiment_no == exp_no, run))[0]
-                collected.append(single_result)
+            collected = get_matching(runs, exp_no)
+            if collected is None:
+                continue
 
             # Average the results and save it as a single experiment
             avg_performances, stds = average_inhomogeneous([c.performances for c in collected], compute_std=(average_of >= 2))

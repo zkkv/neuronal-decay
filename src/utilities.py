@@ -82,7 +82,7 @@ def average_inhomogeneous(xsss, compute_std=True):
         avgs.append(avg)
 
         if compute_std:
-            std = stacked.std(axis=0, ddof=0).tolist()
+            std = stacked.std(axis=0, ddof=1).tolist()
             stds.append(std)
 
     if compute_std:

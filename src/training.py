@@ -1,8 +1,6 @@
-
-
 import marimo
 
-__generated_with = "0.13.1"
+__generated_with = "0.13.10"
 app = marimo.App(width="medium")
 
 with app.setup:
@@ -16,7 +14,7 @@ with app.setup:
     from torch import nn
     import torch.nn.functional as F
     import json
-    from utilities import TransformedDataset, CircularIterator, average_inhomogeneous
+    from utilities import TransformedDataset, CircularIterator, average_inhomogeneous, make_dirs
 
     DETERMINISTIC = False  # FIXME
     SEED = 43
@@ -66,12 +64,16 @@ def _():
     data_dir = "~/.cache/ml/datasets/neuronal-decay"
     model_dir = "~/.cache/ml/models/neuronal-decay"
     out_dir = "./out"
-    results_file = f"{out_dir}/results/results_{SEED}.json"
+    results_dir = f"{out_dir}/results"
+
+    results_file = f"{results_dir}/results_{SEED}.json"
 
     device = torch.accelerator.current_accelerator().type if torch.accelerator.is_available() else "cpu"
 
+    make_dirs([data_dir, model_dir, out_dir, results_dir])
+
     print(f"[INFO] Using device: {device}")
-    print(f"[INFO] Data directory: {data_dir}, Model directory: {model_dir}, Output directory: {out_dir}")
+    print(f"[INFO] Data directory: {data_dir}, Model directory: {model_dir}, Results directory: {results_dir}")
     return data_dir, device, results_file
 
 

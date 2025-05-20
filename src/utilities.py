@@ -1,13 +1,12 @@
-
-
 import marimo
 
-__generated_with = "0.13.1"
+__generated_with = "0.13.10"
 app = marimo.App(width="medium")
 
 with app.setup:
     import numpy as np
     import json
+    import os
     from torch.utils.data import Dataset
 
 
@@ -85,6 +84,12 @@ def average_inhomogeneous(xsss):
         stds.append(std)
 
     return avgs, stds
+
+
+@app.function
+def make_dirs(dirs):
+    for directory in dirs:
+        os.makedirs(directory, exist_ok=True)
 
 
 if __name__ == "__main__":

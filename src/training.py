@@ -45,7 +45,7 @@ def _():
     rotations = [0, 160] # FIXME
     learning_rate = 1e-3
     n_batches_per_task = 100 * 5 # FIXME
-    test_size = 512
+    test_size = 512  # FIXME: Increase this value later
     decay_lambda = 1e-7
 
     print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}")
@@ -359,7 +359,7 @@ def _(
         use_perfect_replay = False
 
         return Experiment(2, model, params, evaluation_sets, optimizer, loss_fn, use_perfect_replay)
-    return (build_experiment_2_no_replay_no_decay,)
+    return
 
 
 @app.cell
@@ -395,7 +395,7 @@ def _(
         use_perfect_replay = False
 
         return Experiment(3, model, params, evaluation_sets, optimizer, loss_fn, use_perfect_replay)
-    return (build_experiment_3_no_replay_with_decay,)
+    return
 
 
 @app.cell
@@ -498,15 +498,13 @@ def _(results_file, run_experiment, save_results_to_file):
 @app.cell
 def _(
     build_experiment_1_with_replay_no_decay,
-    build_experiment_2_no_replay_no_decay,
-    build_experiment_3_no_replay_with_decay,
     build_experiment_4_with_replay_with_decay,
     run_experiments,
 ):
     experiment_builders = [
         build_experiment_1_with_replay_no_decay,
-        build_experiment_2_no_replay_no_decay,
-        build_experiment_3_no_replay_with_decay,
+        # build_experiment_2_no_replay_no_decay,
+        # build_experiment_3_no_replay_with_decay,
         build_experiment_4_with_replay_with_decay,
     ]
 

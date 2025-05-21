@@ -46,7 +46,8 @@ def _():
     learning_rate = 1e-3
     n_batches_per_task = 100 * 5 # FIXME
     test_size = 512  # FIXME: Increase this value later
-    decay_lambda = 1e-7
+    decay_lambda = 1e-5
+    n_neurons = 2048
 
     print(f"[INFO] Hyperparameters: {batch_size=}, {rotations=}, {learning_rate=}, {n_batches_per_task=}, {test_size=}")
     return (
@@ -54,6 +55,7 @@ def _():
         decay_lambda,
         learning_rate,
         n_batches_per_task,
+        n_neurons,
         rotations,
         test_size,
     )
@@ -117,12 +119,12 @@ def _():
 
 @app.class_definition
 class Classifier(nn.Module):
-    def __init__(self, img_size, img_n_channels, n_classes):
+    def __init__(self, img_size, img_n_channels, n_classes, n_neurons):
         super().__init__()
         self.flatten = nn.Flatten()
-        self.fc1 = nn.Linear(img_n_channels * img_size * img_size, 2048)
-        self.fc2 = nn.Linear(2048, 2048)
-        self.fc3 = nn.Linear(2048, n_classes)
+        self.fc1 = nn.Linear(img_n_channels * img_size * img_size, n_neurons)
+        self.fc2 = nn.Linear(n_neurons, n_neurons)
+        self.fc3 = nn.Linear(n_neurons, n_classes)
 
 
     def forward(self, x):
@@ -141,9 +143,9 @@ class Classifier(nn.Module):
 
 
 @app.cell
-def _(img_n_channels, img_size, n_classes):
+def _(img_n_channels, img_size, n_classes, n_neurons):
     def get_model():
-        return Classifier(img_size, img_n_channels, n_classes)
+        return Classifier(img_size, img_n_channels, n_classes, n_neurons)
     return (get_model,)
 
 
@@ -519,7 +521,15 @@ def _():
 
 
 @app.cell
-def _(img_n_channels, img_size, n_classes, n_tasks, test_data, training_data):
+def _(
+    img_n_channels,
+    img_size,
+    n_classes,
+    n_neurons,
+    n_tasks,
+    test_data,
+    training_data,
+):
     def save_results_to_file(results, results_file, seed, should_log=True):
         mapped = {}
 
@@ -543,6 +553,7 @@ def _(img_n_channels, img_size, n_classes, n_tasks, test_data, training_data):
                 "use_perfect_replay": res.use_perfect_replay,
                 "domain_variables": domain_vars,
                 "seed": seed,
+                "n_neurons": n_neurons,
             }
             mapped[f"{res.experiment_no}"] = mapped_experiment
 

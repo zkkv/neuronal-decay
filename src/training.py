@@ -43,8 +43,8 @@ def _():
     # Hyperparameters
     batch_size = 512
     rotations = [0, 160] # FIXME
-    learning_rate = 0.01
-    n_batches_per_task = 3 # FIXME
+    learning_rate = 1e-3
+    n_batches_per_task = 100 * 5 # FIXME
     test_size = 512
     decay_lambda = 1e-7
 

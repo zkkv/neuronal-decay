@@ -1,123 +1,17 @@
-import marimo
+import matplotlib.pyplot as plt
 
-__generated_with = "0.13.10"
-app = marimo.App(width="medium")
-
-with app.setup:
-    import marimo as mo
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import os
-    import json
-    from training import ExperimentResult
-    from utilities import average_inhomogeneous, make_dirs
+from .metrics import average_accuracy
 
 
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""# Evaluation""")
-    return
-
-
-@app.cell
-def _():
-    out_dir = "./out"
-    results_dir = f"{out_dir}/results"
-    plots_dir = f"{out_dir}/plots"
-
-    make_dirs([plots_dir])
-
-    SEEDS = [43]
-    average_of = len(SEEDS)
-    print(f"[INFO] Averaging over these {average_of} seeds: {SEEDS}")
-    return SEEDS, average_of, plots_dir, results_dir
-
-
-@app.cell
-def _():
-    displayed = [1, 2, 3, 4]
-
-    print(f"[INFO] Displaying results only for experiments: {displayed}")
-    return (displayed,)
-
-
-@app.cell
-def _(SEEDS, average_of, displayed, load_results_from_file, results_dir):
-    def get_matching(runs, exp_no):
-        collected = []
-        for run in runs:
-            matching = list(filter(lambda x: x.experiment_no == exp_no, run))
-            if len(matching) == 0:
-                return None
-            collected.append(matching[0])
-        return collected
-
-    def get_aggregated_results(seeds, results_dir, average_of):
-        '''
-        Average results for each experiment across multiple runs.
-
-        Each run is stored in a separate JSON file and is named "results_SEED.json" where SEED 
-        refers to the seed of the run.
-
-        To avoid issues, all JSON files should have the same format and
-        the experiments should have the same experimental setups, i.e. only the seed should change.
-        '''
-
-        if average_of == 1:
-            print("[WARN] Using only one seed, so sample SD won't be computed")
-
-        # Load every JSON results file from each run
-        runs = []
-        for seed in seeds:
-            results_file = f"{results_dir}/results_{seed}.json"
-            results_from_file = load_results_from_file(results_file)
-            results_from_file = list(filter(lambda x: x.experiment_no in displayed, results_from_file))
-            runs.append(results_from_file)
-
-        # Average results from one or more JSON files per experiment
-        aggregated = []
-        for exp_no in displayed:
-            # Collect results for a single experiment from all files
-            collected = get_matching(runs, exp_no)
-            if collected is None:
-                continue
-
-            # Average the results and save it as a single experiment
-            avg_performances, stds = average_inhomogeneous([c.performances for c in collected], compute_std=(average_of >= 2))
-            res = ExperimentResult(
-                collected[0].experiment_no,
-                avg_performances,
-                collected[0].switch_indices,
-                parameters=collected[0].params,
-                use_perfect_replay=collected[0].use_perfect_replay,
-                stds=stds,
-            )
-            aggregated.append(res)
-
-        return aggregated
-
-    results = get_aggregated_results(SEEDS, results_dir, average_of)
-    return (results,)
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""## Visualization""")
-    return
-
-
-@app.cell
-def _(plots_dir, results):
+def generate_plots(results, plots_dir):
     plt.style.use('default')
 
     plot_task_1_for_all_experiments(results, show_std=False, ylim=(0, 100), plots_dir=plots_dir)
     plot_all_tasks_for_experiment(1, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir)
     plot_all_tasks_for_experiment(4, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir)
     plot_average_accuracy(results, ylim=(0, 100), plots_dir=plots_dir)
-    return
 
 
-@app.function(hide_code=True)
 def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir):
     performances = [e.performances[0] for e in results]
     stds = None
@@ -143,7 +37,6 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir):
     )
 
 
-@app.function(hide_code=True)
 def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_dir):
     experiment = list(filter(lambda x: x.experiment_no == experiment_no, results))[0]
     performances = experiment.performances
@@ -173,7 +66,6 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
     )
 
 
-@app.function(hide_code=True)
 def plot_average_accuracy(results, ylim, plots_dir):
     performances = [e.performances for e in results]
     exp_ns = [e.experiment_no for e in results]
@@ -194,7 +86,6 @@ def plot_average_accuracy(results, ylim, plots_dir):
     )
 
 
-@app.function(hide_code=True)
 # Code taken, with some adjustments, from:
 # https://github.com/GMvandeVen/continual-learning/blob/50b8b7fce9786dc402866fc8387e1525f369bbc5/visual/visual_plt.py#L103
 def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title=None,
@@ -327,164 +218,3 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 
     # return the figure
     return f
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""## Metrics""")
-    return
-
-
-@app.cell
-def _(results):
-    print("Accuracy of task 1 before the task switch:")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))
-
-    print("\nAverage accuracy across all tasks (that are there at the time of computation):")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", average_accuracy(e.performances, e.switch_indices))
-
-    print("\nGap depths of task 1 accuracy (p. p.):")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", gap_depths(e.performances[0], e.switch_indices))
-
-    print("\nTime to recover for task 1 accuracy (batches):")
-    for e in results:
-        print(f"Experiment {e.experiment_no}:", time_to_recover(e.performances[0], e.switch_indices))
-    return
-
-
-@app.function
-def accuracy_before_task_switches(performance, switch_indices):
-    '''
-    Compute the accuracy at the last batch before every task switch.
-    '''
-    res = []
-    for i in switch_indices:
-        res.append(performance[i - 1])
-    return res
-
-
-@app.function
-def gap_depths(performance, switch_indices):
-    '''
-    Compute the depth of the deepest gap between two consecutive task switches.
-
-    The depth is computed as:
-    [accuracy before the task switch] - [accuracy at the lowest point at the task switch or after]
-
-    Negative values indicate an increase in accuracy after the task switch.
-
-    The result is an array of tuples with depths and the relative index of the gap (e.g. 0 is the first batch of the new task).
-    '''
-    accs = accuracy_before_task_switches(performance, switch_indices)
-    accs.pop()  # Don't compute for the last task
-
-    res = []
-    for i, acc in enumerate(accs):
-        start, end = switch_indices[i], switch_indices[i + 1]
-
-        arg_min_per_task = np.argmin(performance[start:end])
-        min_per_task = performance[arg_min_per_task + start]
-
-        res.append((acc - min_per_task, arg_min_per_task.item()))
-    return res
-
-
-@app.function
-def time_to_recover(performance, switch_indices):
-    '''
-    Compute time to recover (in number of batches) from the gap to the previous accuracy level.
-    Value is computed after every task switch.
-
-        1. Find the lowest gap between two consecutive task switches.
-        2. Find the first point after the gap where the accuracy is at least that at the end of the previous task.
-        3. Find the difference between time values of the two.
-
-    If the accuracy never recoveres, the resulting value is None.
-    '''
-    accs = accuracy_before_task_switches(performance, switch_indices)
-    accs.pop()  # Don't compute for the last task
-
-    depths = gap_depths(performance, switch_indices)
-
-    res = []
-
-    for i, (_, arg_gap) in enumerate(depths):
-        start = switch_indices[i]
-        arg_gap_absolute = arg_gap + start
-        target = accs[i]
-        sliced = np.array(performance[arg_gap_absolute:])
-
-        rel_idx = np.argmax(sliced >= target) if np.any(sliced >= target) else None
-        if rel_idx == None:
-            res.append(None)
-        else:
-            ttr = (rel_idx + arg_gap).item()
-            res.append(ttr)
-
-    return res
-
-
-@app.function
-def average_accuracy(performances, switch_indices):
-    '''
-    Compute average accuracy across tasks for each interval between two task switches.
-
-    Each interval considers accuracy only of those tasks that are in progress or have been completed.
-    For instance, the first interval only accounts for task 1, the second interval accounts
-    for task 1 and task 2, and so on. The last interval includes all tasks in its computation.
-
-    The result is a single list of accuracy values with the same length as performances. 
-    '''
-    n_batches = switch_indices[-1]
-    reversed_performances = [list(reversed(sublist)) for sublist in performances]
-    res = []
-    curr = 0
-
-    while len(res) < n_batches:
-        while curr < len(reversed_performances[-1]):
-            heads = [sublist[curr] for sublist in reversed_performances]
-            avg = np.mean(heads).item()
-            res.append(avg)
-            curr += 1
-        reversed_performances.pop()
-
-    return list(reversed(res))
-
-
-@app.cell(hide_code=True)
-def _():
-    mo.md(r"""## Utilities""")
-    return
-
-
-@app.cell
-def _(displayed):
-    def load_results_from_file(results_file, should_log=True):
-        results = []
-        with open(results_file, 'r') as f:
-            if should_log:
-                print(f"[INFO] Reading results from {results_file}")
-            obj = json.load(f)
-
-        for res_no in displayed:
-            res_obj = obj.get(str(res_no), None)
-            if res_obj == None:
-                continue
-
-            res = ExperimentResult(
-                res_obj['experiment_no'],
-                res_obj['performances'],
-                res_obj['switch_indices'],
-            )
-            results.append(res)
-
-        results = sorted(results, key=lambda e: e.experiment_no)
-        return results
-    return (load_results_from_file,)
-
-
-if __name__ == "__main__":
-    app.run()

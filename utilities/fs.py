@@ -39,14 +39,19 @@ def save_results_to_file(results, results_file, seed, should_log=True):
 		json.dump(mapped, f, indent=2)
 
 
-def load_results_from_file(results_file, displayed, should_log=True):
+def load_results_from_file(results_file, experiments, should_log=True):
 	results = []
 	with open(results_file, 'r') as f:
 		if should_log:
 			print(f"[INFO] Reading results from {results_file}")
 		obj = json.load(f)
 
-	for res_no in displayed:
+	if len(experiments) == 0:
+		str_keys = list(obj.keys())
+		int_keys = sorted([int(e) for e in str_keys])
+		experiments.extend(int_keys)
+
+	for res_no in experiments:
 		res_obj = obj.get(str(res_no), None)
 		if res_obj == None:
 			continue

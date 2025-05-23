@@ -13,7 +13,7 @@ def get_matching(runs, exp_no):
 	return collected
 
 
-def get_aggregated_results(seeds, results_dir, average_of, displayed):
+def get_aggregated_results(seeds, results_dir, displayed):
 	'''
 	Average results for each experiment across multiple runs.
 
@@ -24,6 +24,8 @@ def get_aggregated_results(seeds, results_dir, average_of, displayed):
 	the experiments should have the same experimental setups, i.e. only the seed should change.
 	'''
 
+	average_of = len(seeds)
+
 	if average_of == 1:
 		print("[WARN] Using only one seed, so sample SD won't be computed")
 
@@ -32,7 +34,6 @@ def get_aggregated_results(seeds, results_dir, average_of, displayed):
 	for seed in seeds:
 		results_file = f"{results_dir}/results_{seed}.json"
 		results_from_file = load_results_from_file(results_file, displayed)
-		results_from_file = list(filter(lambda x: x.experiment_no in displayed, results_from_file))
 		runs.append(results_from_file)
 
 	# Average results from one or more JSON files per experiment

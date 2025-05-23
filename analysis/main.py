@@ -1,21 +1,31 @@
 import matplotlib.pyplot as plt
 
+from .cli import parse_args
 from .plots import generate_plots
 from .metrics import display_metrics
 from .processing import get_aggregated_results
-from utilities.meta import PLOTS_DIR, RESULTS_DIR, AVERAGE_OF, SEEDS
+from utilities.meta import PLOTS_DIR, RESULTS_DIR
 from utilities.fs import make_dirs
 
 
 def main():
+	argv = parse_args()
+	seeds = argv.seeds
+	displayed = argv.display
+
 	make_dirs([PLOTS_DIR])
 
-	displayed = [1, 2, 3, 4]
+	if len(displayed) > 0:
+		print(f"[INFO] Displaying results for experiments: {displayed}")
+	else:
+		print(f"[INFO] Displaying results for all experiments")
 
-	print(f"[INFO] Displaying results only for experiments: {displayed}")
-	print(f"[INFO] Averaging over these {AVERAGE_OF} seeds: {SEEDS}")
+	if len(seeds) > 1:
+		print(f"[INFO] Averaging over these {len(seeds)} seeds: {seeds}")
+	else:
+		print(f"[INFO] Using seed: {seeds[0]}")
 
-	results = get_aggregated_results(SEEDS, RESULTS_DIR, AVERAGE_OF, displayed)
+	results = get_aggregated_results(seeds, RESULTS_DIR, displayed)
 
 	generate_plots(results, PLOTS_DIR)
 	display_metrics(results)

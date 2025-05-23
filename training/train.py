@@ -45,7 +45,6 @@ def train_and_eval(model, train_set, n_batches, batch_size, task_idx, test_sets,
 	while evaluating after each training iteration on [test_sets].
 	'''
 	model.train()
-	iters_left = 1
 	print_every_n = 25
 
 	dataloader = CircularIterator(DataLoader(train_set, batch_size=batch_size, shuffle=True))

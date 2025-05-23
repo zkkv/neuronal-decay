@@ -2,7 +2,7 @@ from torch.utils.data import ConcatDataset
 
 from .data import train_datasets
 from .train import train_and_eval
-from utilities.meta import device, SEED, results_file
+from utilities.meta import DEVICE, SEED, RESULTS_FILE
 from utilities.fs import save_results_to_file
 from utilities.structs import ExperimentResult
 
@@ -56,7 +56,7 @@ def run_experiments(experiment_builders, domain, persist_results=True):
 		print(f"Experiment {res.experiment_no} done!")
 
 	if persist_results:
-		save_results_to_file(results, results_file, SEED)
+		save_results_to_file(results, RESULTS_FILE, SEED)
 
 	print("ALL EXPERIMENTS DONE!")
 	return results

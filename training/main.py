@@ -4,7 +4,7 @@ import torch
 from . import experiments
 from .execution import run_experiments 
 from .config import Domain, Params
-from utilities.meta import DETERMINISTIC, SEED, data_dir, out_dir, results_dir, device
+from utilities.meta import DETERMINISTIC, SEED, DATA_DIR, OUT_DIR, RESULTS_DIR, DEVICE
 from utilities.fs import make_dirs
 
 
@@ -14,13 +14,13 @@ def main():
         torch.manual_seed(SEED)
         torch.use_deterministic_algorithms(True)
 
-    make_dirs([data_dir, out_dir, results_dir])
+    make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
 
     domain = Domain()
     params = Params()
 
-    print(f"[INFO] Using device: {device}")
-    print(f"[INFO] Data directory: {data_dir}, Results directory: {results_dir}")
+    print(f"[INFO] Using device: {DEVICE}")
+    print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}")
     print(f"[INFO] Hyperparameters: {params}")
     print(f"[INFO] Domain variables: {domain}")
 

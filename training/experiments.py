@@ -4,13 +4,13 @@ from .model import get_model
 from .data import test_datasets
 from .train import ce_loss
 from .config import Params
-from utilities.meta import device
+from utilities.meta import DEVICE
 from utilities.structs import Experiment 
 
 
 def build_experiment_1_with_replay_no_decay():
 	model = get_model()
-	model.to(device)
+	model.to(DEVICE)
 
 	params = {
 		"batch_size": Params.batch_size,
@@ -33,7 +33,7 @@ def build_experiment_1_with_replay_no_decay():
 
 def build_experiment_2_no_replay_no_decay():
 	model = get_model()
-	model.to(device)
+	model.to(DEVICE)
 
 	params = {
 		"batch_size": Params.batch_size,
@@ -56,7 +56,7 @@ def build_experiment_2_no_replay_no_decay():
 
 def build_experiment_3_no_replay_with_decay():
 	model = get_model()
-	model.to(device)
+	model.to(DEVICE)
 
 	params = {
 		"batch_size": Params.batch_size,
@@ -79,7 +79,7 @@ def build_experiment_3_no_replay_with_decay():
 
 def build_experiment_4_with_replay_with_decay():
 	model = get_model()
-	model.to(device)
+	model.to(DEVICE)
 
 	params = {
 		"batch_size": Params.batch_size,

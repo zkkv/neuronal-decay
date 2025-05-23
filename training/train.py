@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
-from utilities.meta import device
+from utilities.meta import DEVICE
 from utilities.structs import CircularIterator
 
 
@@ -26,7 +26,7 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
 		if test_size and total_tested >= test_size:
 			break
 
-		X, y = X.to(device), y.to(device)
+		X, y = X.to(DEVICE), y.to(DEVICE)
 		with torch.no_grad():
 			scores, _ = model(X)
 		_, pred = torch.max(scores, 1)
@@ -53,7 +53,7 @@ def train_and_eval(model, train_set, n_batches, batch_size, task_idx, test_sets,
 	for batch_idx in range(n_batches):
 
 		X, y = next(dataloader)
-		X, y = X.to(device), y.to(device)
+		X, y = X.to(DEVICE), y.to(DEVICE)
 
 		# Prediction
 		pred, decay = model(X)

@@ -3,22 +3,10 @@ from .execution import run_experiments
 from .config import Domain, Params
 from .cli import parse_args
 from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, DEVICE
-from utilities.fs import make_dirs
+from utilities.fs import make_dirs, quiet_mode
 
 
-def main():
-	argv = parse_args()
-	seed = argv.seed
-	decay_lambda = argv.lam
-
-	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
-
-	domain = Domain()
-	params = Params()
-
-	if decay_lambda is not None:
-		params.decay_lambda = decay_lambda
-
+def run(params, domain, seed):
 	print(f"[INFO] Using device: {DEVICE}")
 	print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}")
 	print(f"[INFO] Hyperparameters: {params}")
@@ -32,6 +20,27 @@ def main():
 	]
 
 	run_experiments(experiment_builders, params, domain, seed)
+
+
+def main():
+	argv = parse_args()
+	seed = argv.seed
+	decay_lambda = argv.lam
+	is_quiet = argv.quiet
+
+	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
+
+	domain = Domain()
+	params = Params()
+
+	if decay_lambda is not None:
+		params.decay_lambda = decay_lambda
+
+	if is_quiet:
+		with quiet_mode():
+			run(params, domain, seed)
+	else:
+		run(params, domain, seed)
 
 
 if __name__ == "__main__":

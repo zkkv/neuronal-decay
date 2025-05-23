@@ -1,5 +1,7 @@
 import json
 import os
+import sys
+from contextlib import contextmanager
 
 from training.config import Domain, Params  # FIXME: should not depend on training module
 from training.data import training_data, test_data
@@ -70,3 +72,18 @@ def load_results_from_file(results_file, experiments, should_log=True):
 def make_dirs(dirs):
 	for directory in dirs:
 		os.makedirs(directory, exist_ok=True)
+
+
+@contextmanager
+def quiet_mode():
+	"""
+	Discard stdout stream when being inside this context.
+	"""
+	devnull = open(os.devnull, 'w')
+	old_stdout = sys.stdout
+	try:
+		sys.stdout = devnull
+		yield
+	finally:
+		sys.stdout = old_stdout
+		devnull.close()

@@ -1,8 +1,10 @@
 from torch.utils.data import ConcatDataset
+import numpy as np
+import torch
 
 from .data import train_datasets
 from .train import train_and_eval
-from utilities.meta import DEVICE, SEED, RESULTS_FILE
+from utilities.meta import RESULTS_DIR
 from utilities.fs import save_results_to_file
 from utilities.structs import ExperimentResult
 
@@ -39,7 +41,16 @@ def run_experiment(experiment, domain):
 	experiment.set_switch_indices(switch_indices)
 
 
-def run_experiments(experiment_builders, domain, persist_results=True):
+def run_experiments(experiment_builders, domain, seed, persist_results=True):
+	is_deterministic = True if seed is not None else False
+
+	if is_deterministic:
+		np.random.seed(seed)
+		torch.manual_seed(seed)
+		torch.use_deterministic_algorithms(True)
+	else:
+		print("[WARN] No seed was set")
+
 	results = []
 	for eb in experiment_builders:
 		e = eb()
@@ -56,7 +67,11 @@ def run_experiments(experiment_builders, domain, persist_results=True):
 		print(f"Experiment {res.experiment_no} done!")
 
 	if persist_results:
-		save_results_to_file(results, RESULTS_FILE, SEED)
+		if seed is None:
+			results_file = f"{RESULTS_DIR}/results.json"
+		else:
+			results_file = f"{RESULTS_DIR}/results_{seed}.json"
+		save_results_to_file(results, results_file, seed)
 
 	print("ALL EXPERIMENTS DONE!")
 	return results

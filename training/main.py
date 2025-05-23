@@ -1,18 +1,14 @@
-import numpy as np
-import torch 
-
 from . import experiments
 from .execution import run_experiments 
 from .config import Domain, Params
-from utilities.meta import DETERMINISTIC, SEED, DATA_DIR, OUT_DIR, RESULTS_DIR, DEVICE
+from .cli import parse_args
+from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, DEVICE
 from utilities.fs import make_dirs
 
 
 def main():
-	if DETERMINISTIC:
-		np.random.seed(SEED)
-		torch.manual_seed(SEED)
-		torch.use_deterministic_algorithms(True)
+	argv = parse_args()
+	seed = argv.seed
 
 	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
 
@@ -31,7 +27,7 @@ def main():
 		experiments.build_experiment_4_with_replay_with_decay,
 	]
 
-	run_experiments(experiment_builders, domain)
+	run_experiments(experiment_builders, domain, seed)
 
 
 if __name__ == "__main__":

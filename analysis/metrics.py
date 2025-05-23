@@ -2,6 +2,7 @@ import numpy as np
 
 
 def display_metrics(results):
+	print("\nMETRICS:")
 	print("Accuracy of task 1 before the task switch:")
 	for e in results:
 		print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))

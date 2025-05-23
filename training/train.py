@@ -7,7 +7,7 @@ from utilities.structs import CircularIterator
 
 
 def ce_loss(prediction, y, reduction='mean'):
-    return F.cross_entropy(input=prediction, target=y, reduction=reduction)
+	return F.cross_entropy(input=prediction, target=y, reduction=reduction)
 
 
 def compute_accuracy(model, dataset, test_size=None, batch_size=128):

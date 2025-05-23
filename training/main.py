@@ -9,30 +9,30 @@ from utilities.fs import make_dirs
 
 
 def main():
-    if DETERMINISTIC:
-        np.random.seed(SEED)
-        torch.manual_seed(SEED)
-        torch.use_deterministic_algorithms(True)
+	if DETERMINISTIC:
+		np.random.seed(SEED)
+		torch.manual_seed(SEED)
+		torch.use_deterministic_algorithms(True)
 
-    make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
+	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
 
-    domain = Domain()
-    params = Params()
+	domain = Domain()
+	params = Params()
 
-    print(f"[INFO] Using device: {DEVICE}")
-    print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}")
-    print(f"[INFO] Hyperparameters: {params}")
-    print(f"[INFO] Domain variables: {domain}")
+	print(f"[INFO] Using device: {DEVICE}")
+	print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}")
+	print(f"[INFO] Hyperparameters: {params}")
+	print(f"[INFO] Domain variables: {domain}")
 
-    experiment_builders = [
-        experiments.build_experiment_1_with_replay_no_decay,
-        experiments.build_experiment_2_no_replay_no_decay,
-        experiments.build_experiment_3_no_replay_with_decay,
-        experiments.build_experiment_4_with_replay_with_decay,
-    ]
+	experiment_builders = [
+		experiments.build_experiment_1_with_replay_no_decay,
+		experiments.build_experiment_2_no_replay_no_decay,
+		experiments.build_experiment_3_no_replay_with_decay,
+		experiments.build_experiment_4_with_replay_with_decay,
+	]
 
-    run_experiments(experiment_builders, domain)
+	run_experiments(experiment_builders, domain)
 
 
 if __name__ == "__main__":
-    main()
+	main()

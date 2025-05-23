@@ -63,5 +63,5 @@ def load_results_from_file(results_file, displayed, should_log=True):
 
 
 def make_dirs(dirs):
-    for directory in dirs:
-        os.makedirs(directory, exist_ok=True)
+	for directory in dirs:
+		os.makedirs(directory, exist_ok=True)

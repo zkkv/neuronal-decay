@@ -11,5 +11,7 @@ def parse_args():
 						help="zero or more seeds to use when reading result files")
 	parser.add_argument("--display", "-d", nargs="+", type=int, default=[],
 						help="one or more experiment numbers to be displayed in the plots, default is all")
+	parser.add_argument("--quiet", "-q", action="store_true", default=False,
+						help="suppress all output to stdout")
 
 	return parser.parse_args()

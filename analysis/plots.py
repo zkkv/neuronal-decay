@@ -3,16 +3,16 @@ import matplotlib.pyplot as plt
 from .metrics import average_accuracy
 
 
-def generate_plots(results, plots_dir):
+def generate_plots(results, plots_dir, should_show=False):
 	plt.style.use('default')
 
-	plot_task_1_for_all_experiments(results, show_std=False, ylim=(0, 100), plots_dir=plots_dir)
-	plot_all_tasks_for_experiment(1, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir)
-	plot_all_tasks_for_experiment(4, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir)
-	plot_average_accuracy(results, ylim=(0, 100), plots_dir=plots_dir)
+	plot_task_1_for_all_experiments(results, show_std=False, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
+	plot_all_tasks_for_experiment(1, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
+	plot_all_tasks_for_experiment(4, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
+	plot_average_accuracy(results, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
 
 
-def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir):
+def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, should_show):
 	performances = [e.performances[0] for e in results]
 	stds = None
 	if show_std:
@@ -33,11 +33,12 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir):
 		v_line=results[0].switch_indices[:-1],
 		v_label='Task switch',
 		ylim=ylim,
-		save_as=f"{plots_dir}/experiments_{exp_ns}_task_1.svg"
+		save_as=f"{plots_dir}/experiments_{exp_ns}_task_1.svg",
+		should_show=should_show,
 	)
 
 
-def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_dir):
+def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_dir, should_show):
 	experiment = list(filter(lambda x: x.experiment_no == experiment_no, results))[0]
 	performances = experiment.performances
 	n_batches = experiment.switch_indices[-1]
@@ -62,11 +63,12 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		figsize=(10,5),
 		v_line=experiment.switch_indices[:-1],
 		v_label='Task switch', ylim=ylim,
-		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.svg"
+		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.svg",
+		should_show=should_show,
 	)
 
 
-def plot_average_accuracy(results, ylim, plots_dir):
+def plot_average_accuracy(results, ylim, plots_dir, should_show):
 	performances = [e.performances for e in results]
 	exp_ns = [e.experiment_no for e in results]
 	switch_indices = results[0].switch_indices
@@ -82,7 +84,8 @@ def plot_average_accuracy(results, ylim, plots_dir):
 		figsize=(10,5),
 		v_line=switch_indices[:-1],
 		v_label='Task switch', ylim=ylim,
-		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.svg"
+		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.svg",
+		should_show=should_show,
 	)
 
 
@@ -92,7 +95,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 			   title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
 			   x_log=False, with_dots=False, linestyle='solid', h_line=None, h_label=None, h_error=None,
 			   h_lines=None, h_colors=None, h_labels=None, h_errors=None,
-			   v_line=None, v_label=None, save_as=None, should_show=True):
+			   v_line=None, v_label=None, save_as=None, should_show=True, should_log=True):
 	'''Generates a figure containing multiple lines in one plot.
 
 	:param list_with_lines: <list> of all lines to plot (with each line being a <list> as well)
@@ -211,6 +214,8 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	if x_log:
 		axarr.set_xscale('log')
 	if save_as is not None:
+		if should_log:
+			print(f"[INFO] Saving plot to {save_as}")
 		plt.savefig(save_as, bbox_inches='tight')
 	if should_show:
 		plt.show()

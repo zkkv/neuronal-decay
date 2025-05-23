@@ -41,7 +41,7 @@ def run_experiment(experiment, domain):
 	experiment.set_switch_indices(switch_indices)
 
 
-def run_experiments(experiment_builders, domain, seed, persist_results=True):
+def run_experiments(experiment_builders, params, domain, seed, persist_results=True):
 	is_deterministic = True if seed is not None else False
 
 	if is_deterministic:
@@ -53,7 +53,7 @@ def run_experiments(experiment_builders, domain, seed, persist_results=True):
 
 	results = []
 	for eb in experiment_builders:
-		e = eb()
+		e = eb(params)
 		run_experiment(e, domain)
 
 		res = ExperimentResult(

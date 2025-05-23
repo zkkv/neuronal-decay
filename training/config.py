@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from utilities.generic import str_struct
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Params:
 	batch_size: int         = 512
 	rotations: list[int]    = (0, 160) # FIXME

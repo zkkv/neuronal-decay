@@ -9,11 +9,15 @@ from utilities.fs import make_dirs
 def main():
 	argv = parse_args()
 	seed = argv.seed
+	decay_lambda = argv.lam
 
 	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
 
 	domain = Domain()
 	params = Params()
+
+	if decay_lambda is not None:
+		params.decay_lambda = decay_lambda
 
 	print(f"[INFO] Using device: {DEVICE}")
 	print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}")
@@ -27,7 +31,7 @@ def main():
 		experiments.build_experiment_4_with_replay_with_decay,
 	]
 
-	run_experiments(experiment_builders, domain, seed)
+	run_experiments(experiment_builders, params, domain, seed)
 
 
 if __name__ == "__main__":

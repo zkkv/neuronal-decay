@@ -13,5 +13,7 @@ def parse_args():
 						help="one or more experiment numbers to be displayed in the plots, default is all")
 	parser.add_argument("--quiet", "-q", action="store_true", default=False,
 						help="suppress all output to stdout")
+	parser.add_argument("--no-log", "-n", action="store_true", default=False,
+						help="suppress logging to a file")
 
 	return parser.parse_args()

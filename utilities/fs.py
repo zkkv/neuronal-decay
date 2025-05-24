@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from contextlib import contextmanager
+from datetime import datetime
 
 from training.config import Domain, Params  # FIXME: should not depend on training module
 from training.data import training_data, test_data
@@ -75,15 +76,35 @@ def make_dirs(dirs):
 
 
 @contextmanager
-def quiet_mode():
-	"""
-	Discard stdout stream when being inside this context.
-	"""
-	devnull = open(os.devnull, 'w')
+def tee(is_quiet, logfile_path, should_log_time=True):
+	is_logging = logfile_path is not None
 	old_stdout = sys.stdout
+
+	if is_logging:
+		logfile = open(logfile_path, 'a')
+		if should_log_time:
+			logfile.write(str(datetime.now().isoformat()) + "\n")
+	else:
+		logfile = None
+
+	class Stream:
+		def write(self, message):
+			if not is_quiet:
+				old_stdout.write(message)
+			if is_logging:
+				logfile.write(message)
+		def flush(self):
+			if not is_quiet:
+				old_stdout.flush()
+			if is_logging:
+				logfile.flush()
+
+	sys.stdout = Stream()
+
 	try:
-		sys.stdout = devnull
 		yield
 	finally:
 		sys.stdout = old_stdout
-		devnull.close()
+		if is_logging:
+			logfile.close()
+

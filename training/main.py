@@ -1,14 +1,14 @@
 from . import experiments
-from .execution import run_experiments 
+from .execution import run_experiments
 from .config import Domain, Params
 from .cli import parse_args
-from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, DEVICE
-from utilities.fs import make_dirs, quiet_mode
+from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR, DEVICE
+from utilities.fs import make_dirs, tee
 
 
 def run(params, domain, seed):
 	print(f"[INFO] Using device: {DEVICE}")
-	print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}")
+	print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}, Logs directory: {LOG_DIR}")
 	print(f"[INFO] Hyperparameters: {params}")
 	print(f"[INFO] Domain variables: {domain}")
 
@@ -27,8 +27,9 @@ def main():
 	seed = argv.seed
 	decay_lambda = argv.lam
 	is_quiet = argv.quiet
+	is_logging = not argv.no_log
 
-	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR])
+	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR])
 
 	domain = Domain()
 	params = Params()
@@ -36,10 +37,9 @@ def main():
 	if decay_lambda is not None:
 		params.decay_lambda = decay_lambda
 
-	if is_quiet:
-		with quiet_mode():
-			run(params, domain, seed)
-	else:
+	logfile_path = f"{LOG_DIR}/training.log" if is_logging else None
+
+	with tee(is_quiet, logfile_path, should_log_time=True):
 		run(params, domain, seed)
 
 

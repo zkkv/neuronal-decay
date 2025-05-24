@@ -2,14 +2,13 @@ from torch.utils.data import ConcatDataset
 import numpy as np
 import torch
 
-from .data import train_datasets
 from .train import train_and_eval
 from utilities.meta import RESULTS_DIR
 from utilities.fs import save_results_to_file
 from utilities.structs import ExperimentResult
 
 
-def run_experiment(experiment, domain):
+def run_experiment(experiment, domain, train_datasets, test_datasets):
 	print(f" Running experiment {experiment.experiment_no}".center(60, "~"))
 	performance_history = [[] for _ in range(domain.n_tasks)]
 	switch_indices = []
@@ -28,7 +27,7 @@ def run_experiment(experiment, domain):
 			experiment.params["n_batches_per_task"],
 			experiment.params["batch_size"] * task_idx,
 			task_idx,
-			experiment.evaluation_sets,
+			test_datasets,
 			experiment.params["test_size"],
 			performance_history,
 			experiment.optimizer,
@@ -41,7 +40,14 @@ def run_experiment(experiment, domain):
 	experiment.set_switch_indices(switch_indices)
 
 
-def run_experiments(experiment_builders, params, domain, seed, persist_results=True):
+def run_experiments(
+		experiment_builders,
+		params,
+		domain,
+		train_datasets,
+		test_datasets,
+		seed,
+		persist_results=True):
 	is_deterministic = True if seed is not None else False
 
 	if is_deterministic:
@@ -54,7 +60,7 @@ def run_experiments(experiment_builders, params, domain, seed, persist_results=T
 	results = []
 	for eb in experiment_builders:
 		e = eb(params)
-		run_experiment(e, domain)
+		run_experiment(e, domain, train_datasets, test_datasets)
 
 		res = ExperimentResult(
 			e.experiment_no,
@@ -71,7 +77,8 @@ def run_experiments(experiment_builders, params, domain, seed, persist_results=T
 			results_file = f"{RESULTS_DIR}/results.json"
 		else:
 			results_file = f"{RESULTS_DIR}/results_{seed}.json"
-		save_results_to_file(results, results_file, seed)
+		train_len, test_len = len(train_datasets[0]), len(test_datasets[0])
+		save_results_to_file(results, results_file, train_len, test_len, seed)
 
 	print("ALL EXPERIMENTS DONE!")
 	return results

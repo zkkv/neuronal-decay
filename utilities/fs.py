@@ -5,11 +5,10 @@ from contextlib import contextmanager
 from datetime import datetime
 
 from training.config import Domain, Params  # FIXME: should not depend on training module
-from training.data import training_data, test_data
 from utilities.structs import ExperimentResult
 
 
-def save_results_to_file(results, results_file, seed, should_log=True):
+def save_results_to_file(results, results_file, train_len, test_len, seed, should_log=True):
 	mapped = {}
 
 	for res in results:
@@ -20,8 +19,8 @@ def save_results_to_file(results, results_file, seed, should_log=True):
 			"n_classes": Domain.n_classes,
 			"img_n_channels": Domain.img_n_channels,
 			"img_size": Domain.img_size,
-			"len(training_data)": len(training_data),
-			"len(test_data)": len(test_data),
+			"len(training_data)": train_len,
+			"len(test_data)": test_len,
 		}
 
 		mapped_experiment = {

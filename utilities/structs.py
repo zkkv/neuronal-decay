@@ -6,11 +6,10 @@ class Experiment:
 	A single experiment involving a set of parameters and approaches.
 	'''
 
-	def __init__(self, experiment_no, model, parameters, evaluation_sets, optimizer, loss_fn, use_perfect_replay):
+	def __init__(self, experiment_no, model, parameters, optimizer, loss_fn, use_perfect_replay):
 		self.experiment_no = experiment_no
 		self.model = model
 		self.params = parameters
-		self.evaluation_sets = evaluation_sets
 		self.optimizer = optimizer
 		self.loss_fn = loss_fn
 		self.use_perfect_replay = use_perfect_replay

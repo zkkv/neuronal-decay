@@ -1,8 +1,6 @@
 from torchvision import datasets, transforms
 from torch.utils.data import Subset
 
-from .config import Params
-from utilities.meta import DATA_DIR
 from utilities.structs import TransformedDataset
 
 
@@ -21,10 +19,4 @@ def get_datasets(data_dir, rotations):
 		train_datasets.append(TransformedDataset(training_data, transform=transforms.RandomRotation(degrees=(r,r))))
 		test_datasets.append(TransformedDataset(test_data, transform=transforms.RandomRotation(degrees=(r,r))))
 
-	return training_data, test_data, train_datasets, test_datasets
-
-
-# Global variables
-training_data, test_data, train_datasets, test_datasets = get_datasets(DATA_DIR, Params.rotations)
-
-print(f"[INFO] Training set size = {len(training_data)}, Test set size = {len(test_data)}")
+	return train_datasets, test_datasets

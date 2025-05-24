@@ -2,11 +2,15 @@ from . import experiments
 from .execution import run_experiments
 from .config import Domain, Params
 from .cli import parse_args
+from .data import get_datasets
 from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR, DEVICE
 from utilities.fs import make_dirs, tee
 
 
 def run(params, domain, seed):
+	train_datasets, test_datasets = get_datasets(DATA_DIR, params.rotations)
+
+	print(f"[INFO] Training set size = {len(train_datasets[0])}, Test set size = {len(test_datasets[0])}")
 	print(f"[INFO] Using device: {DEVICE}")
 	print(f"[INFO] Data directory: {DATA_DIR}, Results directory: {RESULTS_DIR}, Logs directory: {LOG_DIR}")
 	print(f"[INFO] Hyperparameters: {params}")
@@ -19,7 +23,7 @@ def run(params, domain, seed):
 		experiments.build_experiment_4_with_replay_with_decay,
 	]
 
-	run_experiments(experiment_builders, params, domain, seed)
+	run_experiments(experiment_builders, params, domain, train_datasets, test_datasets, seed)
 
 
 def main():

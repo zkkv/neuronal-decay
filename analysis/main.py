@@ -15,10 +15,12 @@ def run(seeds, displayed):
 	else:
 		print(f"[INFO] Displaying results for all experiments")
 
-	if len(seeds) > 1:
-		print(f"[INFO] Averaging over these {len(seeds)} seeds: {seeds}")
-	else:
+	if len(seeds) == 0:
+		print(f"[INFO] Using results without seed")
+	elif len(seeds) == 1:
 		print(f"[INFO] Using seed: {seeds[0]}")
+	else:
+		print(f"[INFO] Averaging over these {len(seeds)} seeds: {seeds}")
 
 	results = get_aggregated_results(seeds, RESULTS_DIR, displayed)
 

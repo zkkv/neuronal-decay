@@ -31,6 +31,11 @@ def get_aggregated_results(seeds, results_dir, displayed):
 
 	# Load every JSON results file from each run
 	runs = []
+	if average_of == 0:
+		results_file = f"{results_dir}/results.json"
+		results_from_file = load_results_from_file(results_file, displayed)
+		runs.append(results_from_file)
+
 	for seed in seeds:
 		results_file = f"{results_dir}/results_{seed}.json"
 		results_from_file = load_results_from_file(results_file, displayed)

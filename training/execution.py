@@ -78,7 +78,7 @@ def run_experiments(
 		else:
 			results_file = f"{RESULTS_DIR}/results_{seed}.json"
 		train_len, test_len = len(train_datasets[0]), len(test_datasets[0])
-		save_results_to_file(results, results_file, train_len, test_len, seed)
+		save_results_to_file(results, results_file, domain, train_len, test_len, seed)
 
 	print("ALL EXPERIMENTS DONE!")
 	return results

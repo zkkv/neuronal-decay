@@ -4,21 +4,20 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 
-from training.config import Domain, Params  # FIXME: should not depend on training module
 from utilities.structs import ExperimentResult
 
 
-def save_results_to_file(results, results_file, train_len, test_len, seed, should_log=True):
+def save_results_to_file(results, results_file, domain, train_len, test_len, seed, should_log=True):
 	mapped = {}
 
 	for res in results:
 		# Note: We save most values just for logging purposes.
 		#       Not everything is used for evaluation/visualization.
 		domain_vars = {
-			"n_tasks": Domain.n_tasks,
-			"n_classes": Domain.n_classes,
-			"img_n_channels": Domain.img_n_channels,
-			"img_size": Domain.img_size,
+			"n_tasks": domain.n_tasks,
+			"n_classes": domain.n_classes,
+			"img_n_channels": domain.img_n_channels,
+			"img_size": domain.img_size,
 			"len(training_data)": train_len,
 			"len(test_data)": test_len,
 		}
@@ -31,7 +30,6 @@ def save_results_to_file(results, results_file, train_len, test_len, seed, shoul
 			"use_perfect_replay": res.use_perfect_replay,
 			"domain_variables": domain_vars,
 			"seed": seed,
-			"n_neurons": Params.n_neurons,
 		}
 		mapped[f"{res.experiment_no}"] = mapped_experiment
 

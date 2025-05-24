@@ -17,6 +17,7 @@ def build_experiment_1_with_replay_no_decay(params: Params):
 		"learning_rate": params.learning_rate,
 		"n_batches_per_task": params.n_batches_per_task,
 		"test_size": params.test_size,
+		"n_neurons": params.n_neurons,
 		"decay_lambda": 0,
 	}
 
@@ -38,6 +39,7 @@ def build_experiment_2_no_replay_no_decay(params: Params):
 		"learning_rate": params.learning_rate,
 		"n_batches_per_task": params.n_batches_per_task,
 		"test_size": params.test_size,
+		"n_neurons": params.n_neurons,
 		"decay_lambda": 0,
 	}
 
@@ -59,6 +61,7 @@ def build_experiment_3_no_replay_with_decay(params: Params):
 		"learning_rate": params.learning_rate,
 		"n_batches_per_task": params.n_batches_per_task,
 		"test_size": params.test_size,
+		"n_neurons": params.n_neurons,
 		"decay_lambda": params.decay_lambda,
 	}
 
@@ -80,6 +83,7 @@ def build_experiment_4_with_replay_with_decay(params: Params):
 		"learning_rate": params.learning_rate,
 		"n_batches_per_task": params.n_batches_per_task,
 		"test_size": params.test_size,
+		"n_neurons": params.n_neurons,
 		"decay_lambda": params.decay_lambda,
 	}
 

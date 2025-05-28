@@ -10,8 +10,8 @@ class Params:
 	learning_rate: float    = 1e-3
 	n_batches_per_task: int = 1 # FIXME
 	test_size: int          = 512  # FIXME: Increase this value later
-	decay_lambda: float     = 1e-5
 	n_neurons: int          = 2048
+	decay_lambda: float     = 1e-5
 
 	def __str__(self):
 		return str_struct(self)

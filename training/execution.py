@@ -28,7 +28,7 @@ def run_experiment(experiment, domain, train_datasets, test_datasets):
 			task_idx,
 			performance_history,
 		)
-		switch_indices.append(task_idx * experiment.params["n_batches_per_task"])
+		switch_indices.append(task_idx * experiment.params.n_batches_per_task)
 
 	experiment.set_performance_history(performance_history)
 	experiment.set_switch_indices(switch_indices)

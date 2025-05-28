@@ -47,12 +47,12 @@ def train_and_eval(experiment, train_set, test_sets, task_idx, performance):
 	while evaluating after each training iteration on [test_sets].
 	'''
 	model = experiment.model
-	n_batches = experiment.params["n_batches_per_task"]
-	batch_size = experiment.params["batch_size"] * task_idx
-	test_size = experiment.params["test_size"]
+	n_batches = experiment.params.n_batches_per_task
+	batch_size = experiment.params.batch_size * task_idx
+	test_size = experiment.params.test_size
 	optimizer = experiment.optimizer
 	loss_fn = experiment.loss_fn
-	decay_lambda = experiment.params["decay_lambda"]
+	decay_lambda = experiment.params.decay_lambda
 
 	model.train()
 	print_every_n = 25

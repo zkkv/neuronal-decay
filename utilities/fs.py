@@ -3,6 +3,7 @@ import os
 import sys
 from contextlib import contextmanager
 from datetime import datetime
+from dataclasses import asdict
 
 from utilities.structs import ExperimentResult
 
@@ -26,7 +27,7 @@ def save_results_to_file(results, results_file, domain, train_len, test_len, see
 			"experiment_no": res.experiment_no,
 			"performances": res.performances,
 			"switch_indices": res.switch_indices,
-			"parameters": res.params,
+			"parameters": asdict(res.params),
 			"use_perfect_replay": res.use_perfect_replay,
 			"domain_variables": domain_vars,
 			"seed": seed,

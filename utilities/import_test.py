@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# This script allows you to test that all necessary dependencies are installed
+# This script allows you to confirm that all required dependencies are found. Also see: import_test.sh.
 
 def test():
 	# Build-ins
@@ -14,6 +14,14 @@ def test():
 	import matplotlib
 	import numpy
 
+	pkgs = [
+		(torch.__name__, torch.__version__),
+		(torchvision.__name__, torchvision.__version__),
+		(matplotlib.__name__, matplotlib.__version__),
+		(numpy.__name__, numpy.__version__),
+	]
+	for n, v in pkgs:
+		print(f"{n:<20} {v:<20}")
 	print("All dependencies were found!")
 
 

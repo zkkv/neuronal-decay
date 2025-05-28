@@ -41,7 +41,7 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
 	return accuracy
 
 
-def train_and_eval(experiment, train_set, test_sets, task_idx, performance):
+def train_and_eval(experiment, train_set, test_sets, task_idx, performance, is_profiling):
 	'''
 	Function to train a [model] on a given [train_set],
 	while evaluating after each training iteration on [test_sets].
@@ -70,8 +70,10 @@ def train_and_eval(experiment, train_set, test_sets, task_idx, performance):
 		# Evaluation
 		loss = loss_fn(pred, y) + decay_lambda * decay
 
-		macs, params = profile(model, inputs=(X,), verbose=True, custom_ops={type(model): macs_decay})
-		print(f"{macs=}")
+		# Profiling
+		if is_profiling:
+			macs, _ = profile(model, inputs=(X,), verbose=False, custom_ops={type(model): macs_decay})
+			macs = int(macs)
 
 		for test_idx, test_set in enumerate(test_sets):
 			if test_idx >= task_idx:
@@ -85,6 +87,9 @@ def train_and_eval(experiment, train_set, test_sets, task_idx, performance):
 		optimizer.zero_grad()
 
 		# Logging
-		if batch_idx % print_every_n == 0: 
-			print('Training loss: {loss:04f} | Test accuracy (task 1): {prec:05.2f}% | Batch: {b_index}'
+		if batch_idx % print_every_n == 0:
+			log_str = ('Training loss: {loss:04f} | Test accuracy (task 1): {prec:05.2f}% | Batch: {b_index}'
 				.format(loss=loss.item(), prec=performance[0][-1], b_index=batch_idx))
+			if is_profiling:
+				log_str += f' | MACs: {macs}'
+			print(log_str)

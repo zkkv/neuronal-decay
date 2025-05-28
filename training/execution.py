@@ -8,7 +8,7 @@ from utilities.fs import save_results_to_file
 from utilities.structs import ExperimentResult
 
 
-def run_experiment(experiment, domain, train_datasets, test_datasets):
+def run_experiment(experiment, domain, train_datasets, test_datasets, is_profiling):
 	print(f" Running experiment {experiment.experiment_no}".center(60, "~"))
 	performance_history = [[] for _ in range(domain.n_tasks)]
 	switch_indices = []
@@ -27,6 +27,7 @@ def run_experiment(experiment, domain, train_datasets, test_datasets):
 			test_datasets,
 			task_idx,
 			performance_history,
+			is_profiling,
 		)
 		switch_indices.append(task_idx * experiment.params.n_batches_per_task)
 
@@ -41,6 +42,7 @@ def run_experiments(
 		train_datasets,
 		test_datasets,
 		seed,
+		is_profiling=False,
 		persist_results=True):
 	is_deterministic = True if seed is not None else False
 
@@ -53,7 +55,7 @@ def run_experiments(
 	results = []
 	for eb in experiment_builders:
 		e = eb(params)
-		run_experiment(e, domain, train_datasets, test_datasets)
+		run_experiment(e, domain, train_datasets, test_datasets, is_profiling)
 
 		res = ExperimentResult(
 			e.experiment_no,

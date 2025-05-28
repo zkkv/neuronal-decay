@@ -7,7 +7,7 @@ from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR, DEVICE
 from utilities.fs import make_dirs, tee
 
 
-def run(params, domain, seed):
+def run(params, domain, seed, is_profiling):
 	train_datasets, test_datasets = get_datasets(DATA_DIR, params.rotations)
 
 	print(f"[INFO] Training set size = {len(train_datasets[0])}, Test set size = {len(test_datasets[0])}")
@@ -23,7 +23,15 @@ def run(params, domain, seed):
 		experiments.build_experiment_4_with_replay_with_decay,
 	]
 
-	run_experiments(experiment_builders, params, domain, train_datasets, test_datasets, seed)
+	run_experiments(
+		experiment_builders,
+		params,
+		domain,
+		train_datasets,
+		test_datasets,
+		seed,
+		is_profiling=is_profiling,
+	)
 
 
 def main():
@@ -32,6 +40,7 @@ def main():
 	decay_lambda = argv.lam
 	is_quiet = argv.quiet
 	is_logging = not argv.no_log
+	is_profiling = argv.profile
 
 	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR])
 
@@ -44,7 +53,7 @@ def main():
 	logfile_path = f"{LOG_DIR}/training.log" if is_logging else None
 
 	with tee(is_quiet, logfile_path, should_log_time=True):
-		run(params, domain, seed)
+		run(params, domain, seed, is_profiling)
 
 
 if __name__ == "__main__":

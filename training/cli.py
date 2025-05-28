@@ -15,5 +15,7 @@ def parse_args():
 						help="suppress all output to stdout")
 	parser.add_argument("--no-log", "-n", action="store_true", default=False,
 						help="suppress logging to a file")
+	parser.add_argument("--profile", "-p", action="store_true", default=False,
+						help="profile the training step")
 
 	return parser.parse_args()

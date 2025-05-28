@@ -53,7 +53,6 @@ def run_experiments(
 	if is_deterministic:
 		np.random.seed(seed)
 		torch.manual_seed(seed)
-		torch.use_deterministic_algorithms(True)
 	else:
 		print("[WARN] No seed was set")
 

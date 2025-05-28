@@ -5,6 +5,9 @@ from utilities.generic import str_struct
 
 @dataclass(frozen=False)
 class Params:
+	"""
+	Default parameters used for experiments. Each experiment can modify these if needed.
+	"""
 	batch_size: int         = 512
 	rotations: list[int]    = (0, 160) # FIXME
 	learning_rate: float    = 1e-3
@@ -19,6 +22,9 @@ class Params:
 
 @dataclass(frozen=True)
 class Domain:
+	"""
+	Domain variables for the specific dataset at hand.
+	"""
 	n_tasks: int        = len(Params.rotations)
 	n_classes: int      = 10
 	img_n_channels: int = 1

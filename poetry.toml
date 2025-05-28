@@ -1,2 +1,2 @@
 [virtualenvs.options]
-system-site-packages = true
+system-site-packages = false  # If you want to use global installations for some packages, you can set this to true

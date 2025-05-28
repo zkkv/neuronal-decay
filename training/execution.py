@@ -22,17 +22,11 @@ def run_experiment(experiment, domain, train_datasets, test_datasets):
 			dataset = train_datasets[task_idx - 1]
 
 		train_and_eval(
-			experiment.model,
+			experiment,
 			dataset,
-			experiment.params["n_batches_per_task"],
-			experiment.params["batch_size"] * task_idx,
-			task_idx,
 			test_datasets,
-			experiment.params["test_size"],
+			task_idx,
 			performance_history,
-			experiment.optimizer,
-			experiment.loss_fn,
-			experiment.params["decay_lambda"],
 		)
 		switch_indices.append(task_idx * experiment.params["n_batches_per_task"])
 

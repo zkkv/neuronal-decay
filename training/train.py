@@ -41,11 +41,19 @@ def compute_accuracy(model, dataset, test_size=None, batch_size=128):
 	return accuracy
 
 
-def train_and_eval(model, train_set, n_batches, batch_size, task_idx, test_sets, test_size, performance, optimizer, loss_fn, decay_lambda):
+def train_and_eval(experiment, train_set, test_sets, task_idx, performance):
 	'''
 	Function to train a [model] on a given [train_set],
 	while evaluating after each training iteration on [test_sets].
 	'''
+	model = experiment.model
+	n_batches = experiment.params["n_batches_per_task"]
+	batch_size = experiment.params["batch_size"] * task_idx
+	test_size = experiment.params["test_size"]
+	optimizer = experiment.optimizer
+	loss_fn = experiment.loss_fn
+	decay_lambda = experiment.params["decay_lambda"]
+
 	model.train()
 	print_every_n = 25
 

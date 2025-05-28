@@ -8,7 +8,7 @@ from utilities.structs import Experiment
 
 
 def build_experiment_1_with_replay_no_decay(params: Params):
-	model = get_model()
+	model = get_model(use_decay=False)
 	model.to(DEVICE)
 
 	params_dict = {
@@ -30,7 +30,7 @@ def build_experiment_1_with_replay_no_decay(params: Params):
 
 
 def build_experiment_2_no_replay_no_decay(params: Params):
-	model = get_model()
+	model = get_model(use_decay=False)
 	model.to(DEVICE)
 
 	params_dict = {
@@ -52,7 +52,7 @@ def build_experiment_2_no_replay_no_decay(params: Params):
 
 
 def build_experiment_3_no_replay_with_decay(params: Params):
-	model = get_model()
+	model = get_model(use_decay=True)
 	model.to(DEVICE)
 
 	params_dict = {
@@ -74,7 +74,7 @@ def build_experiment_3_no_replay_with_decay(params: Params):
 
 
 def build_experiment_4_with_replay_with_decay(params: Params):
-	model = get_model()
+	model = get_model(use_decay=True)
 	model.to(DEVICE)
 
 	params_dict = {

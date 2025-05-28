@@ -1,7 +1,9 @@
 import torch
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
+from thop import profile
 
+from .model import macs_decay
 from utilities.meta import DEVICE
 from utilities.structs import CircularIterator
 
@@ -59,6 +61,9 @@ def train_and_eval(model, train_set, n_batches, batch_size, task_idx, test_sets,
 
 		# Evaluation
 		loss = loss_fn(pred, y) + decay_lambda * decay
+
+		macs, params = profile(model, inputs=(X,), verbose=True, custom_ops={type(model): macs_decay})
+		print(f"{macs=}")
 
 		for test_idx, test_set in enumerate(test_sets):
 			if test_idx >= task_idx:

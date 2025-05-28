@@ -13,12 +13,14 @@ def test():
 	import torchvision
 	import matplotlib
 	import numpy
+	import thop
 
 	pkgs = [
 		(torch.__name__, torch.__version__),
 		(torchvision.__name__, torchvision.__version__),
 		(matplotlib.__name__, matplotlib.__version__),
 		(numpy.__name__, numpy.__version__),
+		(thop.__name__, thop.__version__),
 	]
 	for n, v in pkgs:
 		print(f"{n:<20} {v:<20}")

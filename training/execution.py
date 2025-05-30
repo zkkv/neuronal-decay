@@ -3,9 +3,10 @@ import numpy as np
 import torch
 
 from .train import train_and_eval
-from utilities.meta import RESULTS_DIR
+from utilities.meta import RESULTS_DIR, DEVICE
 from utilities.fs import save_results_to_file
 from utilities.structs import ExperimentResult
+from utilities.profiling import optional_profiler
 
 
 def run_experiment(experiment, domain, train_datasets, test_datasets, is_profiling):
@@ -21,15 +22,30 @@ def run_experiment(experiment, domain, train_datasets, test_datasets, is_profili
 		else:
 			dataset = train_datasets[task_idx - 1]
 
-		train_and_eval(
-			experiment,
-			dataset,
-			test_datasets,
-			task_idx,
-			performance_history,
-			is_profiling,
-		)
-		switch_indices.append(task_idx * experiment.params.n_batches_per_task)
+		with optional_profiler(is_profiling, DEVICE) as prof:
+			train_and_eval(
+				experiment,
+				dataset,
+				test_datasets,
+				task_idx,
+				performance_history,
+				is_profiling,
+			)
+			if is_profiling:
+				prof.step()
+
+		true_n_batches = task_idx * experiment.params.n_batches_per_task
+		switch_indices.append(true_n_batches)
+
+		if is_profiling:
+			cpu_time_ms = sum(item.self_cpu_time_total for item in prof.key_averages())
+			cpu_time_ms = cpu_time_ms / 1000.0 / true_n_batches
+			print(f"Self CPU time per batch (ms):", cpu_time_ms)
+
+			if DEVICE == "cuda":
+				cuda_time_ms = sum(item.self_cuda_time_total for item in prof.key_averages())
+				cuda_time_ms = cuda_time_ms / 1000.0 / true_n_batches
+				print(f"Self CUDA time per batch (ms):", cuda_time_ms)
 
 	experiment.set_performance_history(performance_history)
 	experiment.set_switch_indices(switch_indices)

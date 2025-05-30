@@ -48,14 +48,18 @@ class ExperimentResult:
 
 class TransformedDataset(Dataset):
 	'''
-	Represents a dataset with lazily-transformed value or target.
+	Represents a dataset with transformed value or target.
 	'''
 
 	def __init__(self, original_dataset, transform=None, target_transform=None):
 		super().__init__()
-		self.dataset = original_dataset
-		self.transform = transform
-		self.target_transform = target_transform
+		self.dataset = []
+		for value, target in original_dataset:
+			if transform is not None:
+				value = transform(value)
+			if target_transform is not None:
+				target = target_transform(target)
+			self.dataset.append((value, target))
 
 
 	def __len__(self):
@@ -64,10 +68,6 @@ class TransformedDataset(Dataset):
 
 	def __getitem__(self, index):
 		(value, target) = self.dataset[index]
-		if self.transform:
-			value = self.transform(value)
-		if self.target_transform:
-			target = self.target_transform(target)
 		return (value, target)
 
 

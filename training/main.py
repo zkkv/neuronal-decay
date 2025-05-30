@@ -8,6 +8,7 @@ from utilities.fs import make_dirs, tee
 
 
 def run(params, domain, seed, is_profiling):
+	print(f"[INFO] Getting and transforming the data...")
 	train_datasets, test_datasets = get_datasets(DATA_DIR, params.rotations)
 
 	print(f"[INFO] Training set size = {len(train_datasets[0])}, Test set size = {len(test_datasets[0])}")

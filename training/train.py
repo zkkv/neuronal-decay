@@ -73,7 +73,6 @@ def train_and_eval(experiment, train_set, test_sets, task_idx, performance, is_p
 		# Profiling
 		if is_profiling:
 			macs, _ = profile(model, inputs=(X,), verbose=False, custom_ops={type(model): macs_decay})
-			macs = int(macs)
 
 		for test_idx, test_set in enumerate(test_sets):
 			if test_idx >= task_idx:

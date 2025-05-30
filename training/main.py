@@ -22,6 +22,16 @@ def run(params, domain, seed, is_profiling):
 		experiments.build_experiment_2_no_replay_no_decay,
 		experiments.build_experiment_3_no_replay_with_decay,
 		experiments.build_experiment_4_with_replay_with_decay,
+		experiments.build_experiment_5_with_replay_with_decay,
+		experiments.build_experiment_6_with_replay_with_decay,
+		experiments.build_experiment_7_with_replay_no_decay,
+		experiments.build_experiment_8_with_replay_with_decay,
+		experiments.build_experiment_9_with_replay_no_decay,
+		experiments.build_experiment_10_with_replay_with_decay,
+		experiments.build_experiment_11_with_replay_no_decay,
+		experiments.build_experiment_12_with_replay_with_decay,
+		experiments.build_experiment_13_with_replay_no_decay,
+		experiments.build_experiment_14_with_replay_with_decay,
 	]
 
 	run_experiments(

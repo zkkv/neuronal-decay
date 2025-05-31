@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-
 from .cli import parse_args
 from .plots import generate_plots
 from .metrics import display_metrics

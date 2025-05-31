@@ -15,8 +15,8 @@ dependencies = [
 ]
 
 [tool.poetry.dependencies]
-torch = {source = "torch-cuda"}  # Replace with torch-cpu if desired
-torchvision = {source = "torch-cuda"}  # Replace with torch-cpu if desired
+torch = {source = "torch-cpu"}  # Replace with torch-cpu if desired
+torchvision = {source = "torch-cpu"}  # Replace with torch-cpu if desired
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

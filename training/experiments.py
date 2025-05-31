@@ -118,7 +118,7 @@ def build_experiment_7_with_replay_no_decay(params: Params):
 	"""
 	Baseline model with replay, lower learning rate
 	"""
-	model = get_model(use_decay=True)
+	model = get_model(use_decay=False)
 	model.to(DEVICE)
 
 	params = copy.deepcopy(params)
@@ -155,7 +155,7 @@ def build_experiment_9_with_replay_no_decay(params: Params):
 	"""
 	Baseline model with replay, higher learning rate
 	"""
-	model = get_model(use_decay=True)
+	model = get_model(use_decay=False)
 	model.to(DEVICE)
 
 	params = copy.deepcopy(params)
@@ -192,7 +192,7 @@ def build_experiment_11_with_replay_no_decay(params: Params):
 	"""
 	Baseline model with replay, smaller model
 	"""
-	model = get_model(use_decay=True)
+	model = get_model(use_decay=False)
 	model.to(DEVICE)
 
 	params = copy.deepcopy(params)
@@ -229,7 +229,7 @@ def build_experiment_13_with_replay_no_decay(params: Params):
 	"""
 	Baseline model with replay, larger model
 	"""
-	model = get_model(use_decay=True)
+	model = get_model(use_decay=False)
 	model.to(DEVICE)
 
 	params = copy.deepcopy(params)

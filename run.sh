@@ -14,12 +14,26 @@ export LD_LIBRARY_PATH="$POETRY_VENV_PACKAGES/nvidia/nccl/lib:$LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH="$POETRY_VENV_PACKAGES/cusparselt/lib:$LD_LIBRARY_PATH"
 
 # Actual script
-
-seeds=(1 2 3)
+seeds=(
+  290353
+  105883
+  942000
+  2958
+  876171
+  42775
+  948129
+  446869
+  9782
+  153441
+  72745
+  777330
+  372621
+  94467
+  812518
+)
 
 for seed in "${seeds[@]}"; do
   poetry run python -m training.main -s $seed
-  echo "$seed"
 done
 
 poetry run python -m analysis.main "${seeds[@]}"

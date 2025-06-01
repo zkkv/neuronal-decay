@@ -9,10 +9,10 @@ class Params:
 	Default parameters used for experiments. Each experiment can modify these if needed.
 	"""
 	batch_size: int         = 512
-	rotations: list[int]    = (0, 160) # FIXME
+	rotations: list[int]    = (0, 80, 160)
 	learning_rate: float    = 1e-3
-	n_batches_per_task: int = 1 # FIXME
-	test_size: int          = 512  # FIXME: Increase this value later
+	n_batches_per_task: int = 500
+	test_size: int          = 2000
 	n_neurons: int          = 2048
 	decay_lambda: float     = 1e-5
 

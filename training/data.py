@@ -8,11 +8,6 @@ def get_datasets(data_dir, rotations):
 	training_data = datasets.MNIST(root=data_dir, train=True, download=True, transform=transforms.ToTensor())
 	test_data = datasets.MNIST(root=data_dir, train=False, download=True, transform=transforms.ToTensor())
 
-	# FIXME
-	# TEMPORARILY REDUCE DATASET SIZE
-	training_data = Subset(training_data, range(500))
-	test_data = Subset(test_data, range(500))
-
 	train_datasets = []
 	test_datasets = []
 	for r in rotations:

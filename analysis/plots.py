@@ -10,6 +10,7 @@ PLOT_CONFIG = {
 	"linewidth_thick": 3.15,
 	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65), (0.385, 0.699, 0.639)],  # HSV
 	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV
+	"palette3": ["#414c66", "#0000b3", "#0020ff", "#0080ff", "#00beee"],  # For sequential data
 	"xticks_size": 16,
 	"yticks_size": 22,
 	"title_size": 22,
@@ -53,13 +54,15 @@ def generate_plots(results, plots_dir, format, should_show=False):
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4, results))
 	plot_average_accuracy(shrunk, y_lim_unzoomed, plots_dir, should_show, line_names)
 
-	# # Task 1, lower lambda
-	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 5, results))
-	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
-
-	# Task 1, higher lambda
-	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 6, results))
-	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	# Task 1, various lambdas
+	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4 or e.experiment_no == 5 or e.experiment_no == 6, results))
+	line_names_override = [  # Hardcoded values (because parsing them is painful)
+		"Baseline",
+		"$\\lambda = 1 \\cdot 10^{-7}$",
+		"$\\lambda = 1 \\cdot 10^{-5}$",
+		"$\\lambda = 5 \\cdot 10^{-5}$"]
+	shrunk[1], shrunk[2] = shrunk[2], shrunk[1]  # Experiment 4 should be in the middle
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names_override)
 
 	# Task 1, lower learning rate
 	shrunk = list(filter(lambda e: e.experiment_no == 7 or e.experiment_no == 8, results))
@@ -96,13 +99,15 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 	exp_ns = [e.experiment_no for e in results]
 
 	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette1"]]
+	if len(colors) < 4:
+		colors = PLOT_CONFIG["palette3"]
 
 	figure = plot_lines(
 		performances,
 		list_with_errors=stds,
 		line_names=line_names,
 		title=f"Performance in Task 1 with and without neuronal decay" if PLOT_CONFIG["show_title"] else None,
-		ylabel="Test accuracy in Task 1 (\%)",
+		ylabel="Test accuracy in Task 1 (\\%)",
 		xlabel="Batch",
 		figsize=(10,5),
 		v_line=results[0].switch_indices[:-1],
@@ -137,7 +142,7 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		list_with_errors=stds,
 		line_names=[f'Task {task_n}' for task_n in task_ns],
 		title=f"Performance in each task throughout Experiment {experiment_no}" if PLOT_CONFIG["show_title"] else None,
-		ylabel="Test accuracy in the given task (\%)",
+		ylabel="Test accuracy in the given task (\\%)",
 		xlabel="Batch",
 		figsize=(10,5),
 		v_line=experiment.switch_indices[:-1],
@@ -164,7 +169,7 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 		avg_accuracies,
 		line_names=line_names,
 		title=f"Average accuracy in all tasks with and without decay" if PLOT_CONFIG["show_title"] else None,
-		ylabel="Average test accuracy in all tasks (\%)",
+		ylabel="Average test accuracy in all tasks (\\%)",
 		xlabel="Batch",
 		figsize=(10,5),
 		v_line=switch_indices[:-1],

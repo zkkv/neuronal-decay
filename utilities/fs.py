@@ -61,6 +61,7 @@ def load_results_from_file(results_file, experiments, should_log=True):
 			res_obj['experiment_no'],
 			res_obj['performances'],
 			res_obj['switch_indices'],
+			parameters=res_obj['parameters'],
 		)
 		results.append(res)
 

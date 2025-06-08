@@ -297,6 +297,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 
 	axarr.spines[['right', 'top']].set_visible(False)
 
+
 	# finish layout
 	# -set y-axis
 	if ylim is not None:
@@ -313,7 +314,8 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 		f.suptitle(title_top)
 	# -add legend
 	if line_names is not None:
-		axarr.legend()
+		legend = axarr.legend(loc='lower right')
+		legend.get_frame().set_facecolor((0.92, 0.92, 0.92))
 	# -set x-axis to log-scale
 	if x_log:
 		axarr.set_xscale('log')

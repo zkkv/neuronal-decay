@@ -1,56 +1,87 @@
 import matplotlib.pyplot as plt
+from matplotlib.colors import hsv_to_rgb
+import numpy as np
 
 from .metrics import average_accuracy
 
+PLOT_CONFIG = {
+	"linewidth_thin": 1.75,
+	"linewidth_thick": 3,
+	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65)],  # HSV
+	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV
+	"xticks_size": 14,
+	"yticks_size": 16,
+	"title_size": 22,
+	"label_size": 18,
+	"show_title": False,
+	"legend_size": 16
+}
+
+
+def setup():
+	plt.style.use('default')
+	plt.rcParams['lines.linewidth'] = PLOT_CONFIG["linewidth_thin"]
+	plt.rcParams['xtick.labelsize'] = PLOT_CONFIG["xticks_size"]
+	plt.rcParams['ytick.labelsize'] = PLOT_CONFIG["yticks_size"]
+	plt.rcParams['axes.titlesize'] = PLOT_CONFIG["title_size"]
+	plt.rcParams['axes.labelsize'] = PLOT_CONFIG["label_size"]
+	plt.rcParams['legend.fontsize'] = PLOT_CONFIG["legend_size"]
+	plt.rcParams.update({
+		"text.usetex": True,
+		"font.family": "serif",
+		"text.latex.preamble": r"\usepackage{times}",
+	})
+
 
 def generate_plots(results, plots_dir, format, should_show=False):
-	plt.style.use('default')
-
 	line_names = [
 		"Baseline",
 		"ND"
 	]
 	y_lim_zoomed = (75, 100)
+	y_lim_unzoomed = (40, 100)
+	show_std = True
 
 	results.sort(key=lambda e: e.experiment_no)
 
 	# Task 1, standard parameters
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# Average, standard parameters
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4, results))
-	plot_average_accuracy(shrunk, (0, 100), plots_dir, should_show, line_names)
+	plot_average_accuracy(shrunk, y_lim_unzoomed, plots_dir, should_show, line_names)
 
-	# Task 1, lower lambda
+	# # Task 1, lower lambda
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 5, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# Task 1, higher lambda
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 6, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# Task 1, lower learning rate
 	shrunk = list(filter(lambda e: e.experiment_no == 7 or e.experiment_no == 8, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# Task 1, higher learning rate
 	shrunk = list(filter(lambda e: e.experiment_no == 9 or e.experiment_no == 10, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# Task 1, smaller net
 	shrunk = list(filter(lambda e: e.experiment_no == 11 or e.experiment_no == 12, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# Task 1, bigger net
 	shrunk = list(filter(lambda e: e.experiment_no == 13 or e.experiment_no == 14, results))
-	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# plot_all_tasks_for_experiment(1, results, False, (0, 100), plots_dir, should_show)
 	# plot_all_tasks_for_experiment(4, results, False, (0, 100), plots_dir, should_show)
 
 
 def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, should_show, line_names):
+	setup()
 	performances = [e.performances[0] for e in results]
 	stds = None
 	if show_std:
@@ -60,23 +91,27 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 			stds = None
 	exp_ns = [e.experiment_no for e in results]
 
+	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette1"]]
+
 	figure = plot_lines(
 		performances,
 		list_with_errors=stds,
 		line_names=line_names,
-		title=f"Performance on Task 1 with and without neuronal decay",
-		ylabel="Test Accuracy on Task 1 (%)",
+		title=f"Performance in Task 1 with and without neuronal decay" if PLOT_CONFIG["show_title"] else None,
+		ylabel="Test accuracy in Task 1 (\%)",
 		xlabel="Batch",
-		figsize=(10,5),
+		figsize=(10,6),
 		v_line=results[0].switch_indices[:-1],
 		v_label='Task switch',
 		ylim=ylim,
+		colors=colors,
 		save_as=f"{plots_dir}/experiments_{exp_ns}_task_1.{format}",
 		should_show=should_show,
 	)
 
 
 def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_dir, should_show):
+	setup()
 	experiment = list(filter(lambda x: x.experiment_no == experiment_no, results))[0]
 	performances = experiment.performances
 	n_batches = experiment.switch_indices[-1]
@@ -95,10 +130,10 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		x_axes=x_axes,
 		list_with_errors=stds,
 		line_names=[f'Task {task_n}' for task_n in task_ns],
-		title=f"Performance on each task throughout Experiment {experiment_no}",
-		ylabel="Test Accuracy (%) on Task",
+		title=f"Performance in each task throughout Experiment {experiment_no}" if PLOT_CONFIG["show_title"] else None,
+		ylabel="Test accuracy (\%) in the given task",
 		xlabel="Batch",
-		figsize=(10,5),
+		figsize=(10,6),
 		v_line=experiment.switch_indices[:-1],
 		v_label='Task switch', ylim=ylim,
 		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.pdf",
@@ -107,21 +142,28 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 
 
 def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
+	setup()
 	performances = [e.performances for e in results]
 	exp_ns = [e.experiment_no for e in results]
 	switch_indices = results[0].switch_indices
 
 	avg_accuracies = [average_accuracy(perfs, switch_indices) for perfs in performances]
 
+	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette2"]]
+	lw = PLOT_CONFIG["linewidth_thick"]
+
 	figure = plot_lines(
 		avg_accuracies,
 		line_names=line_names,
-		title=f"Average accuracy on all tasks with and without decay",
-		ylabel="Average accuracy on all tasks (%)",
+		title=f"Average accuracy in all tasks with and without decay" if PLOT_CONFIG["show_title"] else None,
+		ylabel="Average test accuracy in all tasks (\%)",
 		xlabel="Batch",
-		figsize=(10,5),
+		figsize=(10,6),
 		v_line=switch_indices[:-1],
-		v_label='Task switch', ylim=ylim,
+		v_label='Task switch',
+		ylim=ylim,
+		lw=lw,
+		colors=colors,
 		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.pdf",
 		should_show=should_show,
 	)
@@ -131,7 +173,7 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 # https://github.com/GMvandeVen/continual-learning/blob/50b8b7fce9786dc402866fc8387e1525f369bbc5/visual/visual_plt.py#L103
 def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title=None,
 			   title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
-			   x_log=False, with_dots=False, linestyle='solid', h_line=None, h_label=None, h_error=None,
+			   x_log=False, with_dots=False, linestyle='solid', lw=None, h_line=None, h_label=None, h_error=None,
 			   h_lines=None, h_colors=None, h_labels=None, h_errors=None,
 			   v_line=None, v_label=None, save_as=None, should_show=True, should_log=True):
 	'''Generates a figure containing multiple lines in one plot.
@@ -158,6 +200,16 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	# make plot
 	size = (12,7) if figsize is None else figsize
 	f, axarr = plt.subplots(1, 1, figsize=size)
+
+	x_ticks = [0] + v_line + [len(list_with_lines[0])]
+	mids = []
+	for i in range(len(x_ticks) - 1):
+		l, r = x_ticks[i], x_ticks[i + 1]
+		m = (l + r) // 2
+		mids.append(m)
+	x_ticks.extend(mids)
+	x_ticks = sorted(x_ticks)
+	axarr.set_xticks(x_ticks)
 
 	# add error-lines / shaded areas
 	if list_with_errors is not None:
@@ -189,7 +241,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	for line_id, name in enumerate(line_names):
 		axarr.plot(x_axes[line_id], list_with_lines[line_id], label=name,
 				   color=None if (colors is None) else colors[line_id],
-				   linewidth=4, marker='o' if with_dots else None, linestyle=linestyle if type(linestyle)==str else linestyle[line_id])
+				   linewidth=lw, marker='o' if with_dots else None, linestyle=linestyle if type(linestyle)==str else linestyle[line_id])
 
 	# add horizontal line
 	if h_line is not None:
@@ -225,11 +277,15 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 
 	# add vertical line(s)
 	if v_line is not None:
+		ls = ":"
+		zorder = 0  # Show below main lines
+		cl = (0, 0, 0, 0.25)
+		lw = 3
 		if type(v_line)==list:
 			for id,new_line in enumerate(v_line):
-				axarr.axvline(x=new_line, label=v_label if id==0 else None, color='black')
+				axarr.axvline(x=new_line, ls=ls, label=v_label if id==0 else None, color=cl, linewidth=lw, zorder=zorder)
 		else:
-			axarr.axvline(x=v_line, label=v_label, color='black')
+			axarr.axvline(x=v_line, ls=ls, label=v_label, color=cl, linewidth=lw, zorder=zorder)
 
 	# finish layout
 	# -set y-axis

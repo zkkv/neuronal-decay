@@ -2,21 +2,17 @@
 name = "neuronal-decay"
 version = "1.0.0"
 description = ""
-authors = [{name = "Your Name",email = "you@example.com"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = "~3.12.0"  # Developed using 3.12.8
-dependencies = [
-    "matplotlib (==3.10.3)", # TODO: Loosen up the version requirement
-    "numpy (==2.2.6)",
-    "torch (==2.7.0)",
-    "torchvision (==0.22.0)",
-    "thop (==0.1.1.post2209072238)",
-]
+dependencies = []
 
 [tool.poetry.dependencies]
-torch = {source = "torch-cpu"}  # Replace with torch-cpu if desired
-torchvision = {source = "torch-cpu"}  # Replace with torch-cpu if desired
+torch = {version = "~2.7.0", source = "torch-cuda"}  # Developed using 2.7.0; replace with torch-cpu if desired
+torchvision = {version = "~0.22.0", source = "torch-cuda"}  # Developed using 0.22.0; replace with torch-cpu if desired
+matplotlib = "~3.10.0"  # Developed using 3.10.3
+numpy = "~2.2.0"  # Developed using 2.2.6
+thop = "~0.1.1.post2209072238"  # Developed using 0.1.1.post2209072238
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

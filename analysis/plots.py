@@ -165,6 +165,7 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 		ylim=ylim,
 		lw=lw,
 		colors=colors,
+		with_zoom=False,
 		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.pdf",
 		should_show=should_show,
 	)
@@ -175,7 +176,7 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title=None,
 			   title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
 			   x_log=False, with_dots=False, linestyle='solid', lw=None, h_line=None, h_label=None, h_error=None,
-			   h_lines=None, h_colors=None, h_labels=None, h_errors=None,
+			   h_lines=None, h_colors=None, h_labels=None, h_errors=None, with_zoom=True,
 			   v_line=None, v_label=None, save_as=None, should_show=True, should_log=True):
 	'''Generates a figure containing multiple lines in one plot.
 
@@ -206,7 +207,10 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	axarr.set_xticks(x_ticks)
 
 	# Picture in picture
-	axins_arr = picture_in_picture(f, axarr, list_with_lines, ylim, v_line)
+	if with_zoom:
+		axins_arr = picture_in_picture(f, axarr, list_with_lines, ylim, v_line)
+	else:
+		axins_arr = []
 
 	# add error-lines / shaded areas
 	if list_with_errors is not None:

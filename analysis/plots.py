@@ -8,7 +8,7 @@ from .metrics import average_accuracy
 PLOT_CONFIG = {
 	"linewidth_thin": 1.75,
 	"linewidth_thick": 3.15,
-	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65)],  # HSV
+	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65), (0.385, 0.699, 0.639)],  # HSV
 	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV
 	"xticks_size": 16,
 	"yticks_size": 22,
@@ -77,8 +77,11 @@ def generate_plots(results, plots_dir, format, should_show=False):
 	shrunk = list(filter(lambda e: e.experiment_no == 13 or e.experiment_no == 14, results))
 	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
-	# plot_all_tasks_for_experiment(1, results, False, (0, 100), plots_dir, should_show)
-	# plot_all_tasks_for_experiment(4, results, False, (0, 100), plots_dir, should_show)
+	# All tasks, baseline, standard parameters
+	plot_all_tasks_for_experiment(1, results, show_std, y_lim_zoomed, plots_dir, should_show)
+
+	# All tasks, experimental, standard parameters
+	plot_all_tasks_for_experiment(4, results, show_std, y_lim_zoomed, plots_dir, should_show)
 
 
 def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, should_show, line_names):
@@ -126,17 +129,21 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		except TypeError:
 			stds = None
 
+	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette1"]]
+
 	figure = plot_lines(
 		performances,
 		x_axes=x_axes,
 		list_with_errors=stds,
 		line_names=[f'Task {task_n}' for task_n in task_ns],
 		title=f"Performance in each task throughout Experiment {experiment_no}" if PLOT_CONFIG["show_title"] else None,
-		ylabel="Test accuracy (\%) in the given task",
+		ylabel="Test accuracy in the given task (\%)",
 		xlabel="Batch",
 		figsize=(10,5),
 		v_line=experiment.switch_indices[:-1],
-		v_label='Task switch', ylim=ylim,
+		v_label='Task switch',
+		ylim=ylim,
+		colors=colors,
 		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.pdf",
 		should_show=should_show,
 	)

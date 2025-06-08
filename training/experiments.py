@@ -172,7 +172,7 @@ def build_experiment_9_with_replay_no_decay(params: Params):
 
 def build_experiment_10_with_replay_with_decay(params: Params):
 	"""
-	Experimental model with replay, lower learning rate
+	Experimental model with replay, higher learning rate
 	"""
 	model = get_model(use_decay=True)
 	model.to(DEVICE)

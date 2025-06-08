@@ -6,7 +6,7 @@ from utilities.meta import PLOTS_DIR, RESULTS_DIR, LOG_DIR
 from utilities.fs import make_dirs, tee
 
 
-def run(seeds, displayed):
+def run(seeds, displayed, format):
 	print(f"[INFO] Plots directory; {PLOTS_DIR}, Results directory: {RESULTS_DIR}, Logs directory: {LOG_DIR}")
 	if len(displayed) > 0:
 		print(f"[INFO] Displaying results for experiments: {displayed}")
@@ -22,7 +22,7 @@ def run(seeds, displayed):
 
 	results = get_aggregated_results(seeds, RESULTS_DIR, displayed)
 
-	generate_plots(results, PLOTS_DIR)
+	generate_plots(results, PLOTS_DIR, format)
 	display_metrics(results)
 
 
@@ -32,13 +32,14 @@ def main():
 	displayed = argv.display
 	is_quiet = argv.quiet
 	is_logging = not argv.no_log
+	format = "pdf"
 
 	make_dirs([PLOTS_DIR])
 
 	logfile_path = f"{LOG_DIR}/analysis.log" if is_logging else None
 
 	with tee(is_quiet, logfile_path, should_log_time=True):
-		run(seeds, displayed)
+		run(seeds, displayed, format)
 
 
 if __name__ == "__main__":

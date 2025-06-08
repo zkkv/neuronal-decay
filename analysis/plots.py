@@ -3,16 +3,54 @@ import matplotlib.pyplot as plt
 from .metrics import average_accuracy
 
 
-def generate_plots(results, plots_dir, should_show=False):
+def generate_plots(results, plots_dir, format, should_show=False):
 	plt.style.use('default')
 
-	plot_task_1_for_all_experiments(results, show_std=False, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
-	plot_all_tasks_for_experiment(1, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
-	plot_all_tasks_for_experiment(4, results, show_std=False, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
-	plot_average_accuracy(results, ylim=(0, 100), plots_dir=plots_dir, should_show=should_show)
+	line_names = [
+		"Baseline",
+		"ND"
+	]
+	y_lim_zoomed = (75, 100)
+
+	results.sort(key=lambda e: e.experiment_no)
+
+	# Task 1, standard parameters
+	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# Average, standard parameters
+	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4, results))
+	plot_average_accuracy(shrunk, (0, 100), plots_dir, should_show, line_names)
+
+	# Task 1, lower lambda
+	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 5, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# Task 1, higher lambda
+	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 6, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# Task 1, lower learning rate
+	shrunk = list(filter(lambda e: e.experiment_no == 7 or e.experiment_no == 8, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# Task 1, higher learning rate
+	shrunk = list(filter(lambda e: e.experiment_no == 9 or e.experiment_no == 10, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# Task 1, smaller net
+	shrunk = list(filter(lambda e: e.experiment_no == 11 or e.experiment_no == 12, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# Task 1, bigger net
+	shrunk = list(filter(lambda e: e.experiment_no == 13 or e.experiment_no == 14, results))
+	plot_task_1_for_all_experiments(shrunk, False, y_lim_zoomed, plots_dir, format, should_show, line_names)
+
+	# plot_all_tasks_for_experiment(1, results, False, (0, 100), plots_dir, should_show)
+	# plot_all_tasks_for_experiment(4, results, False, (0, 100), plots_dir, should_show)
 
 
-def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, should_show):
+def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, should_show, line_names):
 	performances = [e.performances[0] for e in results]
 	stds = None
 	if show_std:
@@ -25,15 +63,15 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, should_s
 	figure = plot_lines(
 		performances,
 		list_with_errors=stds,
-		line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
-		title=f"Performance on Task 1 throughout Experiment(s): {exp_ns}",
-		ylabel="Test Accuracy (%) on Task 1",
+		line_names=line_names,
+		title=f"Performance on Task 1 with and without neuronal decay",
+		ylabel="Test Accuracy on Task 1 (%)",
 		xlabel="Batch",
 		figsize=(10,5),
 		v_line=results[0].switch_indices[:-1],
 		v_label='Task switch',
 		ylim=ylim,
-		save_as=f"{plots_dir}/experiments_{exp_ns}_task_1.svg",
+		save_as=f"{plots_dir}/experiments_{exp_ns}_task_1.{format}",
 		should_show=should_show,
 	)
 
@@ -63,12 +101,12 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		figsize=(10,5),
 		v_line=experiment.switch_indices[:-1],
 		v_label='Task switch', ylim=ylim,
-		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.svg",
+		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.pdf",
 		should_show=should_show,
 	)
 
 
-def plot_average_accuracy(results, ylim, plots_dir, should_show):
+def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 	performances = [e.performances for e in results]
 	exp_ns = [e.experiment_no for e in results]
 	switch_indices = results[0].switch_indices
@@ -77,14 +115,14 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show):
 
 	figure = plot_lines(
 		avg_accuracies,
-		line_names=[f'Experiment {exp_n}' for exp_n in exp_ns],
-		title=f"Average accuracy on all tasks throughout Experiment(s): {exp_ns}",
-		ylabel="Average accuracy (%) on all tasks",
+		line_names=line_names,
+		title=f"Average accuracy on all tasks with and without decay",
+		ylabel="Average accuracy on all tasks (%)",
 		xlabel="Batch",
 		figsize=(10,5),
 		v_line=switch_indices[:-1],
 		v_label='Task switch', ylim=ylim,
-		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.svg",
+		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.pdf",
 		should_show=should_show,
 	)
 

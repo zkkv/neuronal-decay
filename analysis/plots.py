@@ -1,16 +1,17 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import hsv_to_rgb
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
 import numpy as np
 
 from .metrics import average_accuracy
 
 PLOT_CONFIG = {
 	"linewidth_thin": 1.75,
-	"linewidth_thick": 3,
+	"linewidth_thick": 3.15,
 	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65)],  # HSV
 	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV
-	"xticks_size": 14,
-	"yticks_size": 16,
+	"xticks_size": 16,
+	"yticks_size": 22,
 	"title_size": 22,
 	"label_size": 18,
 	"show_title": False,
@@ -39,7 +40,7 @@ def generate_plots(results, plots_dir, format, should_show=False):
 		"ND"
 	]
 	y_lim_zoomed = (75, 100)
-	y_lim_unzoomed = (40, 100)
+	y_lim_unzoomed = (50, 100)
 	show_std = True
 
 	results.sort(key=lambda e: e.experiment_no)
@@ -100,7 +101,7 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 		title=f"Performance in Task 1 with and without neuronal decay" if PLOT_CONFIG["show_title"] else None,
 		ylabel="Test accuracy in Task 1 (\%)",
 		xlabel="Batch",
-		figsize=(10,6),
+		figsize=(10,5),
 		v_line=results[0].switch_indices[:-1],
 		v_label='Task switch',
 		ylim=ylim,
@@ -133,7 +134,7 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		title=f"Performance in each task throughout Experiment {experiment_no}" if PLOT_CONFIG["show_title"] else None,
 		ylabel="Test accuracy (\%) in the given task",
 		xlabel="Batch",
-		figsize=(10,6),
+		figsize=(10,5),
 		v_line=experiment.switch_indices[:-1],
 		v_label='Task switch', ylim=ylim,
 		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.pdf",
@@ -158,7 +159,7 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 		title=f"Average accuracy in all tasks with and without decay" if PLOT_CONFIG["show_title"] else None,
 		ylabel="Average test accuracy in all tasks (\%)",
 		xlabel="Batch",
-		figsize=(10,6),
+		figsize=(10,5),
 		v_line=switch_indices[:-1],
 		v_label='Task switch',
 		ylim=ylim,
@@ -202,14 +203,10 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	f, axarr = plt.subplots(1, 1, figsize=size)
 
 	x_ticks = [0] + v_line + [len(list_with_lines[0])]
-	mids = []
-	for i in range(len(x_ticks) - 1):
-		l, r = x_ticks[i], x_ticks[i + 1]
-		m = (l + r) // 2
-		mids.append(m)
-	x_ticks.extend(mids)
-	x_ticks = sorted(x_ticks)
 	axarr.set_xticks(x_ticks)
+
+	# Picture in picture
+	axins_arr = picture_in_picture(f, axarr, list_with_lines, ylim, v_line)
 
 	# add error-lines / shaded areas
 	if list_with_errors is not None:
@@ -221,6 +218,13 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 					list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])),
 					color=None if (colors is None) else colors[line_id],
 					alpha=0.25)
+				for axins in axins_arr:
+					axins.fill_between(
+						x_axes[line_id],
+						list(np.array(list_with_lines[line_id]) + np.array(list_with_errors[line_id])),
+						list(np.array(list_with_lines[line_id]) - np.array(list_with_errors[line_id])),
+						color=None if (colors is None) else colors[line_id],
+						alpha=0.25)
 			else:
 				axarr.plot(
 					x_axes[line_id],
@@ -242,6 +246,10 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 		axarr.plot(x_axes[line_id], list_with_lines[line_id], label=name,
 				   color=None if (colors is None) else colors[line_id],
 				   linewidth=lw, marker='o' if with_dots else None, linestyle=linestyle if type(linestyle)==str else linestyle[line_id])
+		for axins in axins_arr:
+			axins.plot(x_axes[line_id], list_with_lines[line_id], label=name,
+					   color=None if (colors is None) else colors[line_id],
+					   linewidth=lw, marker='o' if with_dots else None, linestyle=linestyle if type(linestyle)==str else linestyle[line_id])
 
 	# add horizontal line
 	if h_line is not None:
@@ -287,6 +295,8 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 		else:
 			axarr.axvline(x=v_line, ls=ls, label=v_label, color=cl, linewidth=lw, zorder=zorder)
 
+	axarr.spines[['right', 'top']].set_visible(False)
+
 	# finish layout
 	# -set y-axis
 	if ylim is not None:
@@ -317,3 +327,82 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 
 	# return the figure
 	return f
+
+
+def picture_in_picture(f, axarr, list_with_lines, ylim, v_line):
+	axins_arr = []
+	for idx, v in enumerate(v_line):
+		x1, x2 = v - 10, v + 100
+		y1, y2 = 80, 100
+
+		total_w = len(list_with_lines[0])
+		total_h = ylim[1] - ylim[0]
+
+		# This puts the inner axis roughly at the same spot
+		inset_w = (x2 - x1) / total_w
+		inset_h = (y2 - y1) / total_h
+		inset_left = x1 / total_w
+		inset_bottom = (y1 - ylim[0]) / total_h
+
+		# Scale
+		inset_w *= 4
+		inset_h *= 0.4
+
+		# Move
+		if idx == 0:
+			inset_left *= 0.53
+			inset_bottom += 0.88
+		elif idx == 1:
+			inset_left *= 0.86
+			inset_bottom += 0.88
+		else:
+			NotImplementedError("More than two switch indexes: manual inset axes positioning required")
+
+		bbox = (inset_left, inset_bottom, inset_w, inset_h)
+		inner_border = "gray"
+		aoi_border = "gray"
+
+		axins = inset_axes(axarr, width="100%", height="100%", loc='lower left',
+						   bbox_to_anchor=bbox, bbox_transform=axarr.transAxes)
+
+		for spine in axins.spines.values():
+			spine.set_edgecolor(inner_border)
+		axins.spines[['right', 'top']].set_visible(False)
+
+		axins.set_xlim(x1, x2)
+		axins.set_ylim(y1, y2)
+		axins.set_xticks([x1, x2])
+		axins.set_yticks([y1, y2])
+
+		axins.tick_params(top=True, labeltop=True, bottom=False, labelbottom=False)
+
+		# axins.grid(zorder=100)
+
+		# Connect with dashed lines
+		axarr.annotate(
+			'',
+			xy=(x1, y2), xycoords=axarr.transData,
+			xytext=(0, 0), textcoords=axins.transAxes,
+			arrowprops=dict(arrowstyle='-', linestyle=':', color=aoi_border, lw=1,
+							shrinkA=0, shrinkB=0)
+		)
+		axarr.annotate(
+			'',
+			xy=(x2, y2), xycoords=axarr.transData,
+			xytext=(1, 0), textcoords=axins.transAxes,
+			arrowprops=dict(arrowstyle='-', linestyle=':', color=aoi_border, lw=1,
+							shrinkA=0, shrinkB=0)
+		)
+
+		axins.set_facecolor((0.97, 0.97, 0.96))
+
+		axins.tick_params(axis='x', labelsize=16)
+		axins.tick_params(axis='y', labelsize=16)
+
+		_, c1, c2 = mark_inset(axarr, axins, loc1=1, loc2=2, ec=aoi_border, lw=1.2, ls=":", zorder=20)
+		c1.set_visible(False)
+		c2.set_visible(False)
+
+		axins_arr.append(axins)
+
+	return axins_arr

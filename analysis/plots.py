@@ -8,9 +8,10 @@ from .metrics import average_accuracy
 PLOT_CONFIG = {
 	"linewidth_thin": 1.75,
 	"linewidth_thick": 3.15,
-	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65), (0.385, 0.699, 0.639)],  # HSV
-	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV
+	"palette1": [(0.956, 0.878, 1.0),(0.551, 1.0, 0.65), (0.385, 0.699, 0.639)],  # HSV, categorical
+	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV, categorical
 	"palette3": ["#414c66", "#0000b3", "#0020ff", "#0080ff", "#00beee"],  # For sequential data
+	"palette4": ["#ef9b20", "#27aeef", "#87bc45"], # Categorical
 	"xticks_size": 16,
 	"yticks_size": 22,
 	"title_size": 22,
@@ -99,7 +100,7 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 	exp_ns = [e.experiment_no for e in results]
 
 	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette1"]]
-	if len(colors) < 4:
+	if len(performances) >= 4:
 		colors = PLOT_CONFIG["palette3"]
 
 	figure = plot_lines(
@@ -134,7 +135,7 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		except TypeError:
 			stds = None
 
-	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette1"]]
+	colors = PLOT_CONFIG["palette4"]
 
 	figure = plot_lines(
 		performances,

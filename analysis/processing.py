@@ -13,11 +13,11 @@ def get_matching(runs, exp_no):
 	return collected
 
 
-def get_aggregated_results(seeds, results_dir, displayed):
+def load_results(seeds, results_dir, displayed):
 	'''
-	Average results for each experiment across multiple runs.
+	Load results for each experiment and each run.
 
-	Each run is stored in a separate JSON file and is named "results_SEED.json" where SEED 
+	Each run is stored in a separate JSON file and is named "results_SEED.json" where SEED
 	refers to the seed of the run.
 
 	To avoid issues, all JSON files should have the same format and
@@ -41,6 +41,16 @@ def get_aggregated_results(seeds, results_dir, displayed):
 		results_from_file = load_results_from_file(results_file, displayed)
 		runs.append(results_from_file)
 
+	return runs
+
+
+def aggregate_results(runs, displayed):
+	'''
+	Average results for each experiment across multiple runs.
+	'''
+
+	average_of = len(runs)
+
 	# Average results from one or more JSON files per experiment
 	aggregated = []
 	for exp_no in displayed:
@@ -60,5 +70,23 @@ def get_aggregated_results(seeds, results_dir, displayed):
 			stds=stds,
 		)
 		aggregated.append(res)
+
+	return aggregated
+
+
+def transpose_runs(runs, displayed):
+	'''
+	Transform runs such that each element contains runs for a single experiment.
+	'''
+
+	# Average results from one or more JSON files per experiment
+	aggregated = []
+	for exp_no in displayed:
+		# Collect results for a single experiment from all files
+		collected = get_matching(runs, exp_no)
+		if collected is None:
+			continue
+
+		aggregated.append(collected)
 
 	return aggregated

@@ -1,7 +1,7 @@
 from .cli import parse_args
 from .plots import generate_plots
 from .metrics import display_metrics
-from .processing import get_aggregated_results
+from .processing import load_results, aggregate_results, transpose_runs
 from utilities.meta import PLOTS_DIR, RESULTS_DIR, LOG_DIR
 from utilities.fs import make_dirs, tee
 
@@ -20,9 +20,11 @@ def run(seeds, displayed, format):
 	else:
 		print(f"[INFO] Averaging over these {len(seeds)} seeds: {seeds}")
 
-	results = get_aggregated_results(seeds, RESULTS_DIR, displayed)
+	runs = load_results(seeds, RESULTS_DIR, displayed)
+	results_visuals = aggregate_results(runs, displayed)
+	results = transpose_runs(runs, displayed)
 
-	generate_plots(results, PLOTS_DIR, format)
+	generate_plots(results_visuals, PLOTS_DIR, format)
 	display_metrics(results)
 
 

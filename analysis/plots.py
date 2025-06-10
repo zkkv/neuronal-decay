@@ -343,6 +343,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	if should_show:
 		plt.show()
 
+	plt.close()
 
 	# return the figure
 	return f

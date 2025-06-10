@@ -1,23 +1,88 @@
 import numpy as np
+import warnings
+
+
+def print_experiment(prefix, arr, suffix=""):
+	s = f"{prefix}: "
+	for a in arr:
+		formatted = "[" + " ".join(f"{x:7.3f}" for x in a) + "]"
+		s += f"{formatted} "
+	s += suffix
+	print(s)
+
+
+def show_accuracy_task_1(results):
+	print("\nAccuracy of task 1 before the task switch (means, stds):")
+	for exps in results:
+		exp_no = exps[0].experiment_no
+		switch_indices = exps[0].switch_indices
+		runs = [accuracy_before_task_switches(e.performances[0], switch_indices) for e in exps]
+		runs = np.array(runs)
+		mean = np.mean(runs, axis=0)
+		std = np.std(runs, axis=0, ddof=1)
+		print_experiment(f"Experiment {exp_no:02}", [mean, std])
+
+
+def show_average_accuracy(results):
+	print("\nAverage accuracy across all tasks (that are there at the time of computation) before the task switch (means, stds:")
+	for exps in results:
+		exp_no = exps[0].experiment_no
+		switch_indices = exps[0].switch_indices
+		runs = [average_accuracy(e.performances, switch_indices) for e in exps]
+		runs = np.array(runs)
+		mean = np.mean(runs, axis=0)
+		std = np.std(runs, axis=0, ddof=1)
+		mean_selected = accuracy_before_task_switches(mean, switch_indices)
+		std_selected = accuracy_before_task_switches(std, switch_indices)
+		print_experiment(f"Experiment {exp_no:02}", [mean_selected, std_selected])
+
+
+def show_gap_depth(results):
+	print("\nGap depths of task 1 accuracy (p. p.) (means, stds):")
+	for exps in results:
+		exp_no = exps[0].experiment_no
+		switch_indices = exps[0].switch_indices
+		runs = [gap_depths(e.performances[0], switch_indices) for e in exps]
+		runs = np.array(runs)
+		runs = runs[:, :, 0]  # Drop the gap index
+
+		mean = np.mean(runs, axis=0)
+		std = np.std(runs, axis=0, ddof=1)
+		print_experiment(f"Experiment {exp_no:02}", [mean, std])
+
+
+def show_time_to_recover(results):
+	print("\nTime to recover for task 1 accuracy (%):")
+	for exps in results:
+		exp_no = exps[0].experiment_no
+		switch_indices = exps[0].switch_indices
+		runs = [time_to_recover(e.performances[0], switch_indices) for e in exps]
+
+		runs = np.array([
+			[np.nan if x is None else x for x in run]
+			for run in runs
+		])
+
+		# Ignore NaN
+		with warnings.catch_warnings():
+			warnings.simplefilter("ignore", category=RuntimeWarning)
+			mean = np.nanmean(runs, axis=0)
+			std = np.nanstd(runs, axis=0, ddof=1)
+
+			# Percentage
+			mean = mean * 100 / switch_indices[0]
+			std = std * 100 / switch_indices[0]
+		nan_counts = np.isnan(runs).sum(axis=0)
+
+		print_experiment(f"Experiment {exp_no:02}", [mean, std], f"Ignored {nan_counts} seeds")
 
 
 def display_metrics(results):
-	print("\nMETRICS:")
-	print("Accuracy of task 1 before the task switch:")
-	for e in results:
-		print(f"Experiment {e.experiment_no}:", accuracy_before_task_switches(e.performances[0], e.switch_indices))
-
-	print("\nAverage accuracy across all tasks (that are there at the time of computation):")
-	for e in results:
-		print(f"Experiment {e.experiment_no}:", average_accuracy(e.performances, e.switch_indices))
-
-	print("\nGap depths of task 1 accuracy (p. p.):")
-	for e in results:
-		print(f"Experiment {e.experiment_no}:", gap_depths(e.performances[0], e.switch_indices))
-
-	print("\nTime to recover for task 1 accuracy (batches):")
-	for e in results:
-		print(f"Experiment {e.experiment_no}:", time_to_recover(e.performances[0], e.switch_indices))
+	print("\n*METRICS*")
+	show_accuracy_task_1(results)
+	show_average_accuracy(results)
+	show_gap_depth(results)
+	show_time_to_recover(results)
 
 
 def accuracy_before_task_switches(performance, switch_indices):

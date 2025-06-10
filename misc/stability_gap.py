@@ -23,6 +23,7 @@ def setup():
 def plot_stability_gap(save_as):
     setup()
     raw_data, v_line = __get_data()
+    v_line -= 5  # Smoothing messes up the position
     performance = box_filter(raw_data, 11)
 
     cl = (0, 0, 0, 0.25)
@@ -52,7 +53,6 @@ def plot_stability_gap(save_as):
 
     plt.tight_layout()
     plt.savefig(save_as)
-    # plot_all_tasks_for_experiment(2, results, ylim=(0, 100), show_std=False, plots_dir=plots_dir, should_show=False)
 
 
 def box_filter(arr, size=3):

@@ -12,6 +12,7 @@ PLOT_CONFIG = {
 	"palette2": [(0.772, 0.477, 0.765), (0.324, 0.356, 0.789)],  # HSV, categorical
 	"palette3": ["#414c66", "#0000b3", "#0020ff", "#0080ff", "#00beee"],  # For sequential data
 	"palette4": ["#ef9b20", "#27aeef", "#87bc45"], # Categorical
+	"palette5": [(0.956, 0.878, 1.0), (0.385, 0.699, 0.639), (0.551, 1.0, 0.65)],  # HSV, categorical
 	"xticks_size": 16,
 	"yticks_size": 22,
 	"title_size": 22,
@@ -87,8 +88,19 @@ def generate_plots(results, plots_dir, format, should_show=False):
 	# All tasks, experimental, standard parameters
 	plot_all_tasks_for_experiment(4, results, show_std, y_lim_zoomed, plots_dir, should_show)
 
+	# Task 1, ND with no replay
+	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 2 or e.experiment_no == 3, results))
+	legend_loc = 'center right'
+	line_names_override = [
+		"Baseline, replay",
+		"Baseline, no replay",
+		"ND, no replay",
+	]
+	palette = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette5"]]
+	plot_task_1_for_all_experiments(shrunk, show_std, (20, 100), plots_dir, format, should_show, line_names_override, with_zoom=False, loc=legend_loc, palette=palette)
 
-def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, should_show, line_names):
+
+def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, should_show, line_names, with_zoom=True, loc='lower right', palette=None):
 	setup()
 	performances = [e.performances[0] for e in results]
 	stds = None
@@ -100,8 +112,10 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 	exp_ns = [e.experiment_no for e in results]
 
 	colors = [hsv_to_rgb(c) for c in PLOT_CONFIG["palette1"]]
-	if len(performances) >= 4:
+	if len(performances) >= 4 and palette is None:
 		colors = PLOT_CONFIG["palette3"]
+	elif palette is not None:
+		colors = palette
 
 	figure = plot_lines(
 		performances,
@@ -115,8 +129,10 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 		v_label='Task switch',
 		ylim=ylim,
 		colors=colors,
+		with_zoom=with_zoom,
 		save_as=f"{plots_dir}/experiments_{exp_ns}_task_1.{format}",
 		should_show=should_show,
+		legend_loc=loc,
 	)
 
 
@@ -190,7 +206,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 			   title_top=None, xlabel=None, ylabel=None, ylim=None, figsize=None, list_with_errors=None, errors="shaded",
 			   x_log=False, with_dots=False, linestyle='solid', lw=None, h_line=None, h_label=None, h_error=None,
 			   h_lines=None, h_colors=None, h_labels=None, h_errors=None, with_zoom=True,
-			   v_line=None, v_label=None, save_as=None, should_show=True, should_log=True):
+			   v_line=None, v_label=None, save_as=None, should_show=True, should_log=True, legend_loc='lower right'):
 	'''Generates a figure containing multiple lines in one plot.
 
 	:param list_with_lines: <list> of all lines to plot (with each line being a <list> as well)
@@ -331,7 +347,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 		f.suptitle(title_top)
 	# -add legend
 	if line_names is not None:
-		legend = axarr.legend(loc='lower right')
+		legend = axarr.legend(loc=legend_loc)
 		legend.get_frame().set_facecolor((0.92, 0.92, 0.92))
 	# -set x-axis to log-scale
 	if x_log:

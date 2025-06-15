@@ -260,3 +260,39 @@ def build_experiment_14_with_replay_with_decay(params: Params):
 	use_perfect_replay = True
 
 	return Experiment(14, model, params, optimizer, loss_fn, use_perfect_replay)
+
+
+def build_experiment_15_with_replay_no_decay(params: Params):
+	"""
+	Baseline model with replay, smaller experiment for profiling
+	"""
+	model = get_model(use_decay=False)
+	model.to(DEVICE)
+
+	params = copy.deepcopy(params)
+	params.decay_lambda = 0
+	params.rotations = (0, )
+
+	optimizer = torch.optim.Adam(model.parameters(), lr=params.learning_rate, betas=(0.9, 0.999))
+	loss_fn = ce_loss
+
+	use_perfect_replay = True
+
+	return Experiment(15, model, params, optimizer, loss_fn, use_perfect_replay)
+
+def build_experiment_16_with_replay_with_decay(params: Params):
+	"""
+	Experimental model with replay, smaller experiment for profiling
+	"""
+	model = get_model(use_decay=True)
+	model.to(DEVICE)
+
+	params = copy.deepcopy(params)
+	params.rotations = (0, )
+
+	optimizer = torch.optim.Adam(model.parameters(), lr=params.learning_rate, betas=(0.9, 0.999))
+	loss_fn = ce_loss
+
+	use_perfect_replay = True
+
+	return Experiment(16, model, params, optimizer, loss_fn, use_perfect_replay)

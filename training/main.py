@@ -7,7 +7,7 @@ from utilities.meta import DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR, DEVICE
 from utilities.fs import make_dirs, tee
 
 
-def run(params, domain, seed, is_profiling):
+def run(params, domain, seed, is_profiling, is_reduced):
 	print(f"[INFO] Getting and transforming the data...")
 	train_datasets, test_datasets = get_datasets(DATA_DIR, params.rotations)
 
@@ -34,6 +34,14 @@ def run(params, domain, seed, is_profiling):
 		experiments.build_experiment_14_with_replay_with_decay,
 	]
 
+	if is_reduced:
+		experiment_builders = [
+			experiments.build_experiment_15_with_replay_no_decay,
+			experiments.build_experiment_16_with_replay_with_decay,
+		]
+
+		domain.n_tasks = 1
+
 	run_experiments(
 		experiment_builders,
 		params,
@@ -52,6 +60,7 @@ def main():
 	is_quiet = argv.quiet
 	is_logging = not argv.no_log
 	is_profiling = argv.profile
+	is_reduced = argv.reduced
 
 	make_dirs([DATA_DIR, OUT_DIR, RESULTS_DIR, LOG_DIR])
 
@@ -64,7 +73,7 @@ def main():
 	logfile_path = f"{LOG_DIR}/training.log" if is_logging else None
 
 	with tee(is_quiet, logfile_path, should_log_time=True):
-		run(params, domain, seed, is_profiling)
+		run(params, domain, seed, is_profiling, is_reduced)
 
 
 if __name__ == "__main__":

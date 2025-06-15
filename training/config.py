@@ -20,7 +20,7 @@ class Params:
 		return str_struct(self)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=False)
 class Domain:
 	"""
 	Domain variables for the specific dataset at hand.

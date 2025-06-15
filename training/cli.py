@@ -17,5 +17,7 @@ def parse_args():
 						help="suppress logging to a file")
 	parser.add_argument("--profile", "-p", action="store_true", default=False,
 						help="profile the training step")
+	parser.add_argument("--reduced", "-r", action="store_true", default=False,
+						help="run the experiments with reduced size (for profiling)")
 
 	return parser.parse_args()

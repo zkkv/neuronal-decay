@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run the training program on multiple seeds and generate plots and metrics.
+# Run the training program on multiple seeds for profiling.
 
 # Poetry and PyTorch don't like each other, so their friendship requires some assistance.
 # In general, poetry can install torch/torchvision successfully, but for some reason
@@ -30,10 +30,53 @@ seeds=(
   372621
   94467
   812518
+  157186
+  622015
+  165838
+  502328
+  708216
+  127911
+  547089
+  916014
+  984231
+  86496
+  266748
+  972119
+  907599
+  665579
+  70875
+  558521
+  96013
+  299954
+  982820
+  191954
+  262342
+  336966
+  590552
+  684652
+  223248
+  1559
+  149701
+  533710
+  619838
+  740084
+  344189
+  359699
+  509966
+  441554
+  953448
+  708295
+  222791
+  351805
+  901197
+  931503
+  273005
+  271616
+  56026
+  588746
+  415326
 )
 
 for seed in "${seeds[@]}"; do
-  poetry run python -m training.main -s $seed
+  poetry run python -m training.main -s $seed -p -r
 done
-
-poetry run python -m analysis.main "${seeds[@]}"

@@ -1,0 +1,94 @@
+2025-06-10T20:41:34.403879
+[INFO] Plots directory; ./out/plots, Results directory: ./out/results, Logs directory: ./out/logs
+[INFO] Displaying results for all experiments
+[INFO] Averaging over these 15 seeds: [290353, 105883, 942000, 2958, 876171, 42775, 948129, 446869, 9782, 153441, 72745, 777330, 372621, 94467, 812518]
+[INFO] Reading results from ./out/results/results_290353.json
+[INFO] Reading results from ./out/results/results_105883.json
+[INFO] Reading results from ./out/results/results_942000.json
+[INFO] Reading results from ./out/results/results_2958.json
+[INFO] Reading results from ./out/results/results_876171.json
+[INFO] Reading results from ./out/results/results_42775.json
+[INFO] Reading results from ./out/results/results_948129.json
+[INFO] Reading results from ./out/results/results_446869.json
+[INFO] Reading results from ./out/results/results_9782.json
+[INFO] Reading results from ./out/results/results_153441.json
+[INFO] Reading results from ./out/results/results_72745.json
+[INFO] Reading results from ./out/results/results_777330.json
+[INFO] Reading results from ./out/results/results_372621.json
+[INFO] Reading results from ./out/results/results_94467.json
+[INFO] Reading results from ./out/results/results_812518.json
+[INFO] Saving plot to ./out/plots/experiments_[1, 4]_task_1.pdf
+[INFO] Saving plot to ./out/plots/experiments_[1, 4]_avg.pdf
+[INFO] Saving plot to ./out/plots/experiments_[1, 5, 4, 6]_task_1.pdf
+[INFO] Saving plot to ./out/plots/experiments_[7, 8]_task_1.pdf
+[INFO] Saving plot to ./out/plots/experiments_[9, 10]_task_1.pdf
+[INFO] Saving plot to ./out/plots/experiments_[11, 12]_task_1.pdf
+[INFO] Saving plot to ./out/plots/experiments_[13, 14]_task_1.pdf
+[INFO] Saving plot to ./out/plots/experiment_1_all_tasks.pdf
+[INFO] Saving plot to ./out/plots/experiment_4_all_tasks.pdf
+
+*METRICS*
+
+Accuracy of task 1 before the task switch (means, stds):
+Experiment 01: [ 97.712  97.692  97.826] [  0.478   0.332   0.192] 
+Experiment 02: [ 97.790  26.605  33.622] [  0.287   1.820   1.494] 
+Experiment 03: [ 97.738  36.680  37.988] [  0.344   4.021   2.270] 
+Experiment 04: [ 97.826  97.415  97.333] [  0.299   0.250   0.245] 
+Experiment 05: [ 97.952  98.132  98.197] [  0.374   0.367   0.179] 
+Experiment 06: [ 97.100  96.572  96.317] [  0.355   0.617   0.342] 
+Experiment 07: [ 96.107  96.423  96.578] [  0.351   0.274   0.310] 
+Experiment 08: [ 97.786  97.705  97.828] [  0.239   0.383   0.178] 
+Experiment 09: [ 96.624  96.917  97.033] [  0.480   0.451   0.349] 
+Experiment 10: [ 95.257  94.137  92.891] [  0.628   0.672   0.727] 
+Experiment 11: [ 97.627  97.786  97.767] [  0.292   0.289   0.207] 
+Experiment 12: [ 97.936  97.767  97.107] [  0.202   0.296   0.357] 
+Experiment 13: [ 97.588  97.816  97.806] [  0.428   0.373   0.268] 
+Experiment 14: [ 97.884  97.555  97.316] [  0.357   0.404   0.261] 
+
+Average accuracy across all tasks (that are there at the time of computation) before the task switch (means, stds:
+Experiment 01: [ 97.712  97.642  97.668] [  0.478   0.261   0.168] 
+Experiment 02: [ 97.790  62.326  52.126] [  0.287   0.994   0.763] 
+Experiment 03: [ 97.738  67.140  57.527] [  0.344   2.019   1.247] 
+Experiment 04: [ 97.826  97.228  97.038] [  0.299   0.226   0.156] 
+Experiment 05: [ 97.952  97.956  98.012] [  0.374   0.245   0.187] 
+Experiment 06: [ 97.100  96.296  95.874] [  0.355   0.315   0.222] 
+Experiment 07: [ 96.107  95.960  96.204] [  0.351   0.237   0.202] 
+Experiment 08: [ 97.786  97.409  97.498] [  0.239   0.263   0.184] 
+Experiment 09: [ 96.624  96.602  96.554] [  0.480   0.294   0.162] 
+Experiment 10: [ 95.257  93.332  91.984] [  0.628   0.624   0.465] 
+Experiment 11: [ 97.627  97.673  97.674] [  0.292   0.232   0.173] 
+Experiment 12: [ 97.936  97.409  97.019] [  0.202   0.260   0.244] 
+Experiment 13: [ 97.588  97.581  97.643] [  0.428   0.261   0.198] 
+Experiment 14: [ 97.884  97.362  97.004] [  0.357   0.288   0.173] 
+
+Gap depths of task 1 accuracy (p. p.) (means, stds):
+Experiment 01: [ 11.693  16.360] [  1.094   1.436] 
+Experiment 02: [ 74.814   1.386] [  1.095   2.001] 
+Experiment 03: [ 65.361   7.313] [  3.086   4.034] 
+Experiment 04: [  6.338   5.527] [  0.665   0.968] 
+Experiment 05: [  9.886  10.951] [  0.686   1.311] 
+Experiment 06: [  5.010   4.150] [  0.968   0.895] 
+Experiment 07: [  8.343  11.713] [  0.521   0.575] 
+Experiment 08: [  3.880   4.074] [  0.275   0.418] 
+Experiment 09: [ 16.361  23.120] [  2.810   3.094] 
+Experiment 10: [  8.441   8.962] [  2.354   2.680] 
+Experiment 11: [ 12.510  16.345] [  1.228   1.789] 
+Experiment 12: [  7.044   6.061] [  0.855   1.095] 
+Experiment 13: [ 11.807  15.702] [  1.297   0.896] 
+Experiment 14: [  6.755   5.581] [  0.898   1.067] 
+
+Time to recover for task 1 accuracy (%):
+Experiment 01: [ 15.760  14.920] [  7.031   6.434] Ignored [0 0] seeds
+Experiment 02: [    nan   3.960] [    nan   3.911] Ignored [15  0] seeds
+Experiment 03: [    nan  19.385] [    nan  18.470] Ignored [15  2] seeds
+Experiment 04: [ 14.787  16.093] [ 10.992   9.587] Ignored [0 0] seeds
+Experiment 05: [ 16.067  21.329] [  7.492  13.843] Ignored [0 1] seeds
+Experiment 06: [ 16.240  13.200] [  8.223  10.592] Ignored [0 3] seeds
+Experiment 07: [ 47.160  52.120] [ 13.875  15.237] Ignored [0 0] seeds
+Experiment 08: [ 29.507  26.093] [ 15.450  23.501] Ignored [0 0] seeds
+Experiment 09: [ 14.267  22.333] [  6.975  10.656] Ignored [0 0] seeds
+Experiment 10: [ 34.800  22.500] [ 23.649  13.060] Ignored [2 7] seeds
+Experiment 11: [ 14.467  21.013] [  5.999  13.717] Ignored [0 0] seeds
+Experiment 12: [ 14.187  37.109] [  6.527  30.513] Ignored [0 4] seeds
+Experiment 13: [ 13.880  14.933] [  6.012   4.861] Ignored [0 0] seeds
+Experiment 14: [ 16.187  16.185] [ 12.012   8.698] Ignored [0 2] seeds

@@ -1,5 +1,7 @@
 # Neuronal Decay
 
+The experimental code for the paper "I Fought the Low: Decreasing Stability Gap with Neuronal Decay".
+
 ## Prerequisites
 
 1. Get Python 3.12 (or above).

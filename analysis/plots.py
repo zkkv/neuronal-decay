@@ -54,7 +54,7 @@ def generate_plots(results, plots_dir, format, should_show=False):
 
 	# Average, standard parameters
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4, results))
-	plot_average_accuracy(shrunk, y_lim_unzoomed, plots_dir, should_show, line_names)
+	plot_average_accuracy(shrunk, y_lim_unzoomed, plots_dir, format, should_show, line_names)
 
 	# Task 1, various lambdas
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 4 or e.experiment_no == 5 or e.experiment_no == 6, results))
@@ -83,10 +83,10 @@ def generate_plots(results, plots_dir, format, should_show=False):
 	plot_task_1_for_all_experiments(shrunk, show_std, y_lim_zoomed, plots_dir, format, should_show, line_names)
 
 	# All tasks, baseline, standard parameters
-	plot_all_tasks_for_experiment(1, results, show_std, y_lim_zoomed, plots_dir, should_show)
+	plot_all_tasks_for_experiment(1, results, show_std, y_lim_zoomed, format, plots_dir, should_show)
 
 	# All tasks, experimental, standard parameters
-	plot_all_tasks_for_experiment(4, results, show_std, y_lim_zoomed, plots_dir, should_show)
+	plot_all_tasks_for_experiment(4, results, show_std, y_lim_zoomed, format, plots_dir, should_show)
 
 	# Task 1, ND with no replay
 	shrunk = list(filter(lambda e: e.experiment_no == 1 or e.experiment_no == 2 or e.experiment_no == 3, results))
@@ -136,7 +136,7 @@ def plot_task_1_for_all_experiments(results, show_std, ylim, plots_dir, format, 
 	)
 
 
-def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_dir, should_show):
+def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, format, plots_dir, should_show):
 	setup()
 	experiment = list(filter(lambda x: x.experiment_no == experiment_no, results))[0]
 	performances = experiment.performances
@@ -166,12 +166,12 @@ def plot_all_tasks_for_experiment(experiment_no, results, show_std, ylim, plots_
 		v_label='Task switch',
 		ylim=ylim,
 		colors=colors,
-		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.pdf",
+		save_as=f"{plots_dir}/experiment_{experiment_no}_all_tasks.{format}",
 		should_show=should_show,
 	)
 
 
-def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
+def plot_average_accuracy(results, ylim, plots_dir, format, should_show, line_names):
 	setup()
 	performances = [e.performances for e in results]
 	exp_ns = [e.experiment_no for e in results]
@@ -195,7 +195,7 @@ def plot_average_accuracy(results, ylim, plots_dir, should_show, line_names):
 		lw=lw,
 		colors=colors,
 		with_zoom=False,
-		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.pdf",
+		save_as=f"{plots_dir}/experiments_{exp_ns}_avg.{format}",
 		should_show=should_show,
 	)
 
@@ -355,7 +355,7 @@ def plot_lines(list_with_lines, x_axes=None, line_names=None, colors=None, title
 	if save_as is not None:
 		if should_log:
 			print(f"[INFO] Saving plot to {save_as}")
-		plt.savefig(save_as, bbox_inches='tight')
+		plt.savefig(save_as, bbox_inches='tight', dpi=700)
 	if should_show:
 		plt.show()
 

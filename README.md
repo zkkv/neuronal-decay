@@ -9,7 +9,7 @@ The experimental code for the paper "I Fought the Low: Decreasing Stability Gap 
    - get a Python build tool called [poetry](https://python-poetry.org/).
    - install all dependencies manually, e.g. via `pip`. The versions of all dependencies are specified in the `pyproject.toml` file.
 
-If you want to reproduce the results, using the same versions of packages and Python itself is recommended. For that reason a `poetry.lock` file is provided. If you have any issues install the dependencies, first try to delete that file.
+If you want to reproduce the results, using the same versions of packages and Python itself is recommended. For that reason a `poetry.lock` file is provided. If you have any issues when installing the dependencies, first try to delete that file.
 
 > [!TIP]
 > By default, PyTorch installs all necessary CUDA packages. If you want to run PyTorch code on the CPU and don't need these extra packages, you can replace the source repository of `torch` and `torchvision` to `torch-cpu` in `pyproject.toml` before proceeding to the next step.
